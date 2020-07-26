@@ -683,9 +683,29 @@ void mu_update_control(mu_Context *ctx, mu_Id id, mu_Rect rect, int opt) {
   if (opt & MU_OPT_NOINTERACT) { return; }
   if (mouseover && !ctx->mouse_down) { ctx->hover = id; }
 
+  // @TODO: Figure out what exactly is going on here.
   if (ctx->focus == id) {
-    if (ctx->mouse_pressed && !mouseover) { mu_set_focus(ctx, 0); }
-    if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) { mu_set_focus(ctx, 0); }
+    //if (ctx->mouse_pressed && !mouseover) { mu_set_focus(ctx, 0); }
+    //if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) { mu_set_focus(ctx, 0); }
+
+    // @Question: what is the differenece between mouse_down and mouse_pressed???
+
+    // I think this clears the focus if the mouse is pressed and it was not
+    // over the current id
+    if (ctx->mouse_pressed && !mouseover) {
+        mu_set_focus(ctx, 0);
+    }
+    // I think this says, if we are currently focused and the mouse is not down
+    // and we haven't set the MU_OPT_HOLDFOCUS opt, then clear the focus of this id.
+    // Otherwise, if we do have holdfocus set, we keep the focus on this id
+    if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) {
+        mu_set_focus(ctx, 0);
+    } else {
+        mu_set_focus(ctx, id);
+    }
+
+    // @TODO: handle the case of clicking the item when it is currently in
+    // focus, we should probably clear the focus in that case
   }
 
   if (ctx->hover == id) {

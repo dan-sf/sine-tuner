@@ -4,7 +4,7 @@
 #include "microui.h"
 
 static float bg[3] = { 90, 95, 100 };
-static int clicked = 0;
+//static int clicked = 0;
 
 static void main_window(mu_Context *ctx) {
     if (mu_begin_window_ex(ctx, "Main Window", mu_rect(0, 0, 300, 452), MU_OPT_NOCLOSE | MU_OPT_NOTITLE | MU_OPT_NORESIZE | MU_OPT_EXPANDED | MU_OPT_NOSCROLL)) {
@@ -29,36 +29,42 @@ static void main_window(mu_Context *ctx) {
         int button_width = 143;
         int button_height = 145;
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (clicked) {
-            int *value = (int *)malloc(sizeof(int));
-            static int tmp;
-            mu_push_id(ctx, value, sizeof(value));
-            tmp = *value;
-            *value = 140;
-            mu_pop_id(ctx);
+        //if (clicked) {
+        //    int *value = (int *)malloc(sizeof(int));
+        //    static int tmp;
+        //    mu_push_id(ctx, value, sizeof(value));
+        //    tmp = *value;
+        //    *value = 140;
+        //    mu_pop_id(ctx);
 
-            //ctx->style->colors[0].r = 150;
+        //    //ctx->style->colors[0].r = 150;
 
-            //static int uint8_slider(mu_Context *ctx, unsigned char *value, int low, int high) {
-            //  int res = mu_slider_ex(ctx, &tmp, low, high, 0, "%.0f", MU_OPT_ALIGNCENTER);
-            //  *value = tmp;
-            //  return res;
-        }
+        //    //static int uint8_slider(mu_Context *ctx, unsigned char *value, int low, int high) {
+        //    //  int res = mu_slider_ex(ctx, &tmp, low, high, 0, "%.0f", MU_OPT_ALIGNCENTER);
+        //    //  *value = tmp;
+        //    //  return res;
+        //}
 
         // mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
-        if (mu_button(ctx, "Button 1")) {
+        //if (mu_button(ctx, "Button 1")) {
+        if (mu_button_ex(ctx, "Button 1", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { // MU_OPT_HOLDFOCUS
             // set background color of the button
-            clicked = 1;
+            //clicked = 1;
             //ctx->style->colors[0].r = 150;
             //mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
         }
-        if (mu_button(ctx, "Button 2")) { /* write_log("Pressed button 2"); */ }
+        //if (mu_button(ctx, "Button 2")) { /* write_log("Pressed button 2"); */ }
+        if (mu_button_ex(ctx, "Button 2", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (mu_button(ctx, "Button 3")) { /* write_log("Pressed button 3"); */ }
-        if (mu_button(ctx, "Button 4")) { /* write_log("Pressed button 4"); */ }
+        //if (mu_button(ctx, "Button 3")) { /* write_log("Pressed button 3"); */ }
+        if (mu_button_ex(ctx, "Button 3", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        //if (mu_button(ctx, "Button 4")) { /* write_log("Pressed button 4"); */ }
+        if (mu_button_ex(ctx, "Button 4", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (mu_button(ctx, "Button 5")) { /* write_log("Pressed button 5"); */ }
-        if (mu_button(ctx, "Button 6")) { /* printf("Pressed button 6"); */ }
+        //if (mu_button(ctx, "Button 5")) { /* write_log("Pressed button 5"); */ }
+        if (mu_button_ex(ctx, "Button 5", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        //if (mu_button(ctx, "Button 6")) { /* printf("Pressed button 6"); */ }
+        if (mu_button_ex(ctx, "Button 6", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
       //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
       //mu_label(ctx, "Test buttons 2:");
       //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
