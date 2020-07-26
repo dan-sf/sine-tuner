@@ -4,9 +4,10 @@
 #include "microui.h"
 
 static float bg[3] = { 90, 95, 100 };
+static int clicked = 0;
 
 static void main_window(mu_Context *ctx) {
-    if (mu_begin_window_ex(ctx, "Main Window", mu_rect(0, 0, 300, 450), MU_OPT_NOCLOSE | MU_OPT_NOTITLE | MU_OPT_NORESIZE)) {
+    if (mu_begin_window_ex(ctx, "Main Window", mu_rect(0, 0, 300, 452), MU_OPT_NOCLOSE | MU_OPT_NOTITLE | MU_OPT_NORESIZE | MU_OPT_EXPANDED | MU_OPT_NOSCROLL)) {
         mu_Container *win = mu_get_current_container(ctx);
         win->rect.w = mu_max(win->rect.w, 240);
         win->rect.h = mu_max(win->rect.h, 300);
@@ -25,13 +26,37 @@ static void main_window(mu_Context *ctx) {
     /* labels + buttons */
     //if (mu_header_ex(ctx, "Test Buttons", MU_OPT_EXPANDED)) {
       //mu_layout_row(ctx, 3, (int[]) { 86, -110, -1 }, 0);
-        mu_layout_row(ctx, 3, (int[]) { 144, 144 }, 100);
-        if (mu_button(ctx, "Button 1")) { /* write_log("Pressed button 1"); */ }
+        int button_width = 143;
+        int button_height = 145;
+        mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
+        if (clicked) {
+            int *value = (int *)malloc(sizeof(int));
+            static int tmp;
+            mu_push_id(ctx, value, sizeof(value));
+            tmp = *value;
+            *value = 140;
+            mu_pop_id(ctx);
+
+            //ctx->style->colors[0].r = 150;
+
+            //static int uint8_slider(mu_Context *ctx, unsigned char *value, int low, int high) {
+            //  int res = mu_slider_ex(ctx, &tmp, low, high, 0, "%.0f", MU_OPT_ALIGNCENTER);
+            //  *value = tmp;
+            //  return res;
+        }
+
+        // mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
+        if (mu_button(ctx, "Button 1")) {
+            // set background color of the button
+            clicked = 1;
+            //ctx->style->colors[0].r = 150;
+            //mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
+        }
         if (mu_button(ctx, "Button 2")) { /* write_log("Pressed button 2"); */ }
-        mu_layout_row(ctx, 2, (int[]) { 144, 144 }, 100);
+        mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
         if (mu_button(ctx, "Button 3")) { /* write_log("Pressed button 3"); */ }
         if (mu_button(ctx, "Button 4")) { /* write_log("Pressed button 4"); */ }
-        mu_layout_row(ctx, 2, (int[]) { 144, 144 }, 100);
+        mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
         if (mu_button(ctx, "Button 5")) { /* write_log("Pressed button 5"); */ }
         if (mu_button(ctx, "Button 6")) { /* printf("Pressed button 6"); */ }
       //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }

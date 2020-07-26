@@ -12,7 +12,7 @@ static uint8_t color_buf[BUFFER_SIZE * 16];
 static uint32_t  index_buf[BUFFER_SIZE *  6];
 
 static int width  = 300;
-static int height = 450;
+static int height = 452;
 static int buf_idx;
 
 static SDL_Window *window;
@@ -22,7 +22,7 @@ static SDL_Renderer *renderer;
 void r_init(void) {
   /* init SDL window */
   window = SDL_CreateWindow(
-    "Test microui", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    "Sine Tuner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     width, height, 0);
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 }
