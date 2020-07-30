@@ -182,7 +182,12 @@ void mu_end(mu_Context *ctx) {
   /* reset input state */
   ctx->key_pressed = 0;
   ctx->input_text[0] = '\0';
+  ctx->last_mouse_pressed = ctx->mouse_pressed;
+  ctx->last_mouse_down = ctx->mouse_down;
+  ctx->last_mouse_up = ctx->mouse_up;
   ctx->mouse_pressed = 0;
+  ctx->mouse_down = 0;
+  ctx->mouse_up = 0;
   ctx->scroll_delta = mu_vec2(0, 0);
   ctx->last_mouse_pos = ctx->mouse_pos;
 
@@ -391,7 +396,11 @@ void mu_input_mousedown(mu_Context *ctx, int x, int y, int btn) {
 
 void mu_input_mouseup(mu_Context *ctx, int x, int y, int btn) {
   mu_input_mousemove(ctx, x, y);
+  // I'm not sure why we do this 'not and' here. Leaving it in incase other
+  // code uses it, I just added a proper mouse up value to the context which
+  // should be used
   ctx->mouse_down &= ~btn;
+  ctx->mouse_up |= btn;
 }
 
 
@@ -703,11 +712,45 @@ void mu_update_control(mu_Context *ctx, mu_Id id, mu_Rect rect, int opt) {
     } else {
         mu_set_focus(ctx, id);
     }
-
-    // @TODO: handle the case of clicking the item when it is currently in
-    // focus, we should probably clear the focus in that case
   }
 
+  // Handle the toggle case where the user is clicking on a button that is
+  // already in focus, this makes sure to unfocus the button clicking it off
+  if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down) {
+      ctx->remove_focus = id;
+  }
+
+  if (ctx->hover == id && ctx->focus == id && ctx->last_mouse_down && !ctx->mouse_down && ctx->remove_focus == id) {
+        mu_set_focus(ctx, 0);
+        ctx->remove_focus = 0;
+  }
+
+  if (ctx->hover != ctx->remove_focus && !ctx->last_mouse_down && ctx->mouse_down) {
+      ctx->remove_focus = 0;
+  }
+
+  // @FIXME: There seems to be an issue where we don't correctly unfocus the
+  // button when the user just taps the mouse pad (not a full click). We get it
+  // right sometimes but most of the time we don't. This if statement was me
+  // thinking that maybe the mouse down and mouse up events are being sent
+  // within a single frame, but this doesn't fix the issue. We should dig into
+  // what events are being sent when this issue happens
+  // if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down && ctx->mouse_up && ctx->remove_focus == id) {
+  //     mu_set_focus(ctx, 0);
+  //     ctx->remove_focus = 0;
+  // }
+
+  // // Test code to verify down click/up click works as expected
+  // if (ctx->hover == id) {
+  //     if (!ctx->last_mouse_down && ctx->mouse_down) {
+  //         printf("CLICK DOWN\n");
+  //     }
+  //     if (ctx->last_mouse_down && !ctx->mouse_down) {
+  //         printf("CLICK UP\n");
+  //     }
+  // }
+
+  // Here is where we set initial focus before anything has ever had focus set
   if (ctx->hover == id) {
     if (ctx->mouse_pressed) {
       mu_set_focus(ctx, id);
