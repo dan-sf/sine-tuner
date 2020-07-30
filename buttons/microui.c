@@ -686,78 +686,78 @@ int mu_mouse_over(mu_Context *ctx, mu_Rect rect) {
 
 
 void mu_update_control(mu_Context *ctx, mu_Id id, mu_Rect rect, int opt) {
-  int mouseover = mu_mouse_over(ctx, rect);
+    int mouseover = mu_mouse_over(ctx, rect);
 
-  if (ctx->focus == id) { ctx->updated_focus = 1; }
-  if (opt & MU_OPT_NOINTERACT) { return; }
-  if (mouseover && !ctx->mouse_down) { ctx->hover = id; }
+    if (ctx->focus == id) { ctx->updated_focus = 1; }
+    if (opt & MU_OPT_NOINTERACT) { return; }
+    if (mouseover && !ctx->mouse_down) { ctx->hover = id; }
 
-  // @TODO: Figure out what exactly is going on here.
-  if (ctx->focus == id) {
-    //if (ctx->mouse_pressed && !mouseover) { mu_set_focus(ctx, 0); }
-    //if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) { mu_set_focus(ctx, 0); }
+    // @TODO: Figure out what exactly is going on here.
+    if (ctx->focus == id) {
+        //if (ctx->mouse_pressed && !mouseover) { mu_set_focus(ctx, 0); }
+        //if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) { mu_set_focus(ctx, 0); }
 
-    // @Question: what is the differenece between mouse_down and mouse_pressed???
+        // @Question: what is the differenece between mouse_down and mouse_pressed???
 
-    // I think this clears the focus if the mouse is pressed and it was not
-    // over the current id
-    if (ctx->mouse_pressed && !mouseover) {
-        mu_set_focus(ctx, 0);
+        // I think this clears the focus if the mouse is pressed and it was not
+        // over the current id
+        if (ctx->mouse_pressed && !mouseover) {
+            mu_set_focus(ctx, 0);
+        }
+        // I think this says, if we are currently focused and the mouse is not down
+        // and we haven't set the MU_OPT_HOLDFOCUS opt, then clear the focus of this id.
+        // Otherwise, if we do have holdfocus set, we keep the focus on this id
+        if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) {
+            mu_set_focus(ctx, 0);
+        } else {
+            mu_set_focus(ctx, id);
+        }
     }
-    // I think this says, if we are currently focused and the mouse is not down
-    // and we haven't set the MU_OPT_HOLDFOCUS opt, then clear the focus of this id.
-    // Otherwise, if we do have holdfocus set, we keep the focus on this id
-    if (!ctx->mouse_down && ~opt & MU_OPT_HOLDFOCUS) {
-        mu_set_focus(ctx, 0);
-    } else {
-        mu_set_focus(ctx, id);
+
+    // Handle the toggle case where the user is clicking on a button that is
+    // already in focus, this makes sure to unfocus the button clicking it off
+    if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down) {
+        ctx->remove_focus = id;
     }
-  }
 
-  // Handle the toggle case where the user is clicking on a button that is
-  // already in focus, this makes sure to unfocus the button clicking it off
-  if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down) {
-      ctx->remove_focus = id;
-  }
-
-  if (ctx->hover == id && ctx->focus == id && ctx->last_mouse_down && !ctx->mouse_down && ctx->remove_focus == id) {
+    if (ctx->hover == id && ctx->focus == id && ctx->last_mouse_down && !ctx->mouse_down && ctx->remove_focus == id) {
         mu_set_focus(ctx, 0);
         ctx->remove_focus = 0;
-  }
-
-  if (ctx->hover != ctx->remove_focus && !ctx->last_mouse_down && ctx->mouse_down) {
-      ctx->remove_focus = 0;
-  }
-
-  // @FIXME: There seems to be an issue where we don't correctly unfocus the
-  // button when the user just taps the mouse pad (not a full click). We get it
-  // right sometimes but most of the time we don't. This if statement was me
-  // thinking that maybe the mouse down and mouse up events are being sent
-  // within a single frame, but this doesn't fix the issue. We should dig into
-  // what events are being sent when this issue happens
-  // if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down && ctx->mouse_up && ctx->remove_focus == id) {
-  //     mu_set_focus(ctx, 0);
-  //     ctx->remove_focus = 0;
-  // }
-
-  // // Test code to verify down click/up click works as expected
-  // if (ctx->hover == id) {
-  //     if (!ctx->last_mouse_down && ctx->mouse_down) {
-  //         printf("CLICK DOWN\n");
-  //     }
-  //     if (ctx->last_mouse_down && !ctx->mouse_down) {
-  //         printf("CLICK UP\n");
-  //     }
-  // }
-
-  // Here is where we set initial focus before anything has ever had focus set
-  if (ctx->hover == id) {
-    if (ctx->mouse_pressed) {
-      mu_set_focus(ctx, id);
-    } else if (!mouseover) {
-      ctx->hover = 0;
     }
-  }
+
+    if (ctx->hover != ctx->remove_focus && !ctx->last_mouse_down && ctx->mouse_down) {
+        ctx->remove_focus = 0;
+    }
+
+    // @FIXME: There seems to be an issue where we don't correctly unfocus the
+    // button when the user just taps the mouse pad (not a full click). We get it
+    // right sometimes but most of the time we don't. This if statement was me
+    // thinking that maybe the mouse down and mouse up events are being sent
+    // within a single frame, but this doesn't fix the issue. We should dig into
+    // what events are being sent when this issue happens
+    // if (ctx->hover == id && ctx->focus == id && !ctx->last_mouse_down && ctx->mouse_down && ctx->mouse_up && ctx->remove_focus == id) {
+    //     mu_set_focus(ctx, 0);
+    //     ctx->remove_focus = 0;
+    // }
+
+    // // Test code to verify down click/up click works as expected
+    // if (ctx->hover == id) {
+    //     if (!ctx->last_mouse_down && ctx->mouse_down) {
+    //         printf("CLICK DOWN\n");
+    //     }
+    //     if (ctx->last_mouse_down && !ctx->mouse_down) {
+    //         printf("CLICK UP\n");
+    //     }
+    // }
+
+    // Here is where we set initial focus before anything has ever had focus set
+    if (ctx->hover == id) {
+        if (ctx->mouse_pressed) {
+            mu_set_focus(ctx, id);
+        } else if (!mouseover) {
+            ctx->hover = 0;
+        }
+    }
 }
 
 
