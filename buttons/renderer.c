@@ -4,12 +4,18 @@
 #include "renderer.h"
 #include "atlas.inl"
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #define BUFFER_SIZE 16384
 
 static float   tex_buf[BUFFER_SIZE *  8];
 static float  vert_buf[BUFFER_SIZE *  8];
 static uint8_t color_buf[BUFFER_SIZE * 16];
 static uint32_t  index_buf[BUFFER_SIZE *  6];
+
+static char ttf_buffer[BUFFER_SIZE * 32];
+static stbtt_fontinfo font;
 
 static int width  = 300;
 static int height = 452;
@@ -20,12 +26,40 @@ static SDL_Renderer *renderer;
 
 
 void r_init(void) {
+
+   // FILE *ff = fopen("font.ttf", "rb");
+   // if (!ff) { printf("font file not found\n"); exit(1); }
+   // fseek(ff, 0, SEEK_END);
+   // int fsize = ftell(ff);
+   // rewind(ff);
+   // fread(ttf_buffer, 1, fsize, ff);
+
+   // stbtt_InitFont(&font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer,0));
+
+
+
+
+
   /* init SDL window */
   window = SDL_CreateWindow(
     "Sine Tuner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     width, height, 0);
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  r_init_font();
 }
+
+
+void r_init_font(void) {
+   FILE *ff = fopen("font.ttf", "rb");
+   if (!ff) { printf("font file not found\n"); exit(1); }
+   fseek(ff, 0, SEEK_END);
+   int fsize = ftell(ff);
+   rewind(ff);
+   fread(ttf_buffer, 1, fsize, ff);
+
+   stbtt_InitFont(&font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer,0));
+}
+
 
 static void flush(void) { // I'm not sure if this flush is needed?
   if (buf_idx == 0) { return; }
@@ -93,16 +127,62 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 }
 
 void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
-  mu_Rect dst = { pos.x, pos.y, 0, 0 };
-  for (const char *p = text; *p; p++) {
-    if ((*p & 0xc0) == 0x80) { continue; }
-    int chr = mu_min((unsigned char) *p, 127);
-    mu_Rect src = atlas[ATLAS_FONT + chr];
-    dst.w = src.w;
-    dst.h = src.h;
-    push_quad(dst, src, color);
-    dst.x += dst.w;
-  }
+
+   unsigned char *bitmap = 0;
+
+   float scale = stbtt_ScaleForPixelHeight(&font, 20);
+   int ascent, descent;
+   stbtt_GetFontVMetrics(&font, &ascent, &descent, 0);
+
+   int ind,
+       advance,
+       h,w,
+       xpos=pos.x,
+       ypos=pos.y+scale*ascent;
+   // printf("ascent=%d descent=%d linedist=%d\n",(int)(scale*ascent),(int)(scale*descent),(int)(scale * (ascent-descent)));
+   for (ind=0; text[ind]; ++ind) {
+      bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, 20), text[ind], &w, &h, 0, 0);
+      stbtt_GetCodepointHMetrics(&font, text[ind], &advance, 0);
+      stbtt_GetCodepointBitmapBox(&font, text[ind], scale, scale, &pos.x, &pos.y, 0, 0);
+
+      int i,j,
+          x=xpos,
+          y=ypos;
+      for (j=0; j < h; ++j) {
+         for (i=0; i < w; ++i) {
+            if (bitmap[j*w+i]) {
+              SDL_SetRenderDrawColor(renderer, 0, 0, 0, bitmap[j*w+i]);
+              SDL_RenderDrawPoint(renderer, x+pos.x, y+pos.y);
+            }
+            ++x;
+         }
+         x=xpos;
+         ++y;
+      }
+      stbtt_FreeBitmap(bitmap, 0);
+      if (!text[ind+1]) break;
+      xpos += scale*advance;
+   }
+
+   // SDL_RenderPresent(renderer);
+   // SDL_Event event;
+   // while (1)
+   //   while(SDL_PollEvent(&event))
+   //     if (event.type==SDL_QUIT) { SDL_Quit(); exit(0); }
+   // return 0;
+
+
+
+  // mu_Rect dst = { pos.x, pos.y, 0, 0 };
+  // for (const char *p = text; *p; p++) {
+  //   if ((*p & 0xc0) == 0x80) { continue; }
+  //   int chr = mu_min((unsigned char) *p, 127);
+  //   mu_Rect src = atlas[ATLAS_FONT + chr];
+  //   dst.w = src.w;
+  //   dst.h = src.h;
+  //   push_quad(dst, src, color);
+  //   dst.x += dst.w;
+  // }
 }
 
 void r_draw_icon(int id, mu_Rect rect, mu_Color color) {
