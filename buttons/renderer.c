@@ -126,11 +126,13 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
     SDL_RenderFillRect(renderer, &sdl_rect);
 }
 
+
 void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
 
    unsigned char *bitmap = 0;
 
-   float scale = stbtt_ScaleForPixelHeight(&font, 20);
+   int font_size = 20;
+   float scale = stbtt_ScaleForPixelHeight(&font, font_size);
    int ascent, descent;
    stbtt_GetFontVMetrics(&font, &ascent, &descent, 0);
 
@@ -140,10 +142,11 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
        xpos=pos.x,
        ypos=pos.y+scale*ascent;
    // printf("ascent=%d descent=%d linedist=%d\n",(int)(scale*ascent),(int)(scale*descent),(int)(scale * (ascent-descent)));
+   int ix0, iy0, ix1, iy1;
    for (ind=0; text[ind]; ++ind) {
-      bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, 20), text[ind], &w, &h, 0, 0);
+      bitmap = stbtt_GetCodepointBitmap(&font, scale, scale, text[ind], &w, &h, 0, 0);
       stbtt_GetCodepointHMetrics(&font, text[ind], &advance, 0);
-      stbtt_GetCodepointBitmapBox(&font, text[ind], scale, scale, &pos.x, &pos.y, 0, 0);
+      stbtt_GetCodepointBitmapBox(&font, text[ind], scale, scale, &ix0, &iy0, &ix1, &iy1);
 
       int i,j,
           x=xpos,
@@ -152,7 +155,7 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
          for (i=0; i < w; ++i) {
             if (bitmap[j*w+i]) {
               SDL_SetRenderDrawColor(renderer, 0, 0, 0, bitmap[j*w+i]);
-              SDL_RenderDrawPoint(renderer, x+pos.x, y+pos.y);
+              SDL_RenderDrawPoint(renderer, x+ix0, y+iy0);
             }
             ++x;
          }

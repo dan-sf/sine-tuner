@@ -47,24 +47,24 @@ static void main_window(mu_Context *ctx) {
 
         // mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
         //if (mu_button(ctx, "Button 1")) {
-        if (mu_button_ex(ctx, "Button 1", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { // MU_OPT_HOLDFOCUS
+        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { // MU_OPT_HOLDFOCUS
             // set background color of the button
             //clicked = 1;
             //ctx->style->colors[0].r = 150;
             //mu_draw_rect(ctx, mu_layout_next(ctx), ctx->style->colors[0]);
         }
         //if (mu_button(ctx, "Button 2")) { /* write_log("Pressed button 2"); */ }
-        if (mu_button_ex(ctx, "Button 2", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "A", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
         //if (mu_button(ctx, "Button 3")) { /* write_log("Pressed button 3"); */ }
-        if (mu_button_ex(ctx, "Button 3", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "D", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         //if (mu_button(ctx, "Button 4")) { /* write_log("Pressed button 4"); */ }
-        if (mu_button_ex(ctx, "Button 4", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "G", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
         //if (mu_button(ctx, "Button 5")) { /* write_log("Pressed button 5"); */ }
-        if (mu_button_ex(ctx, "Button 5", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "B", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         //if (mu_button(ctx, "Button 6")) { /* printf("Pressed button 6"); */ }
-        if (mu_button_ex(ctx, "Button 6", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "e", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
       //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
       //mu_label(ctx, "Test buttons 2:");
       //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
