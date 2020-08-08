@@ -9,19 +9,10 @@
 #define BUFFER_SIZE 16384
 
 
-unsigned char ttf_buffer[1<<20];
-unsigned char temp_bitmap[512*512];
-
-stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
-
-
 static float   tex_buf[BUFFER_SIZE *  8];
 static float  vert_buf[BUFFER_SIZE *  8];
 static uint8_t color_buf[BUFFER_SIZE * 16];
 static uint32_t  index_buf[BUFFER_SIZE *  6];
-
-// static char ttf_buffer[BUFFER_SIZE * 32];
-// static stbtt_fontinfo font;
 
 static int width  = 300;
 static int height = 452;
@@ -58,17 +49,17 @@ void r_init_font() {
     float size = 30.0;
     FILE *ff = fopen("monospace.ttf", "rb");
     if (!ff) { printf("font file not found\n"); exit(1); }
+
     fseek(ff, 0, SEEK_END);
     int fsize = ftell(ff);
     rewind(ff);
     unsigned char* buffer = malloc(1<<20);
     fread(buffer, 1, fsize, ff);
-
     fclose(ff);
 
     font_data = calloc(sizeof(FontData), 1);
-    font_data->info = malloc(sizeof(stbtt_fontinfo)); // use calloc here?
-    font_data->chars = malloc(sizeof(stbtt_packedchar) * 96);
+    font_data->info = malloc(sizeof(stbtt_fontinfo));
+    font_data->chars = malloc(sizeof(stbtt_packedchar) * 96); // ASCII 32..126 is 95 glyphs
 
     if(stbtt_InitFont(font_data->info, buffer, 0) == 0) {
         free(buffer);
@@ -99,9 +90,9 @@ void r_init_font() {
     SDL_SetTextureBlendMode(font_data->atlas, SDL_BLENDMODE_BLEND);
 
     Uint32* pixels = malloc(font_data->texture_size * font_data->texture_size * sizeof(Uint32));
-    static SDL_PixelFormat* format = NULL;
-    if(format == NULL) format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
-    for(int i = 0; i < font_data->texture_size * font_data->texture_size; i++) {
+    static SDL_PixelFormat* format = NULL; // Should this just be made global (at top of file)?
+    if (format == NULL) format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+    for (int i = 0; i < font_data->texture_size * font_data->texture_size; i++) {
         pixels[i] = SDL_MapRGBA(format, 0xff, 0xff, 0xff, bitmap[i]);
     }
     SDL_UpdateTexture(font_data->atlas, NULL, pixels, font_data->texture_size * sizeof(Uint32));
@@ -190,8 +181,23 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
         // Check char is within ascii range
         if ((int)text[i] >= 32 && (int)text[i] < 128) {
             stbtt_packedchar* info = &font_data->chars[text[i] - 32];
-            SDL_Rect src_rect = {info->x0, info->y0, info->x1 - info->x0, info->y1 - info->y0};
-            SDL_Rect dst_rect = {pos.x + info->xoff, pos.y + info->yoff, info->x1 - info->x0, info->y1 - info->y0};
+
+            SDL_Rect src_rect = {
+                info->x0,
+                info->y0,
+                info->x1 - info->x0,
+                info->y1 - info->y0
+            };
+            SDL_Rect dst_rect = {
+                // Need to update this so that we are fully centered in the
+                // button
+                pos.x + info->xoff,
+                //pos.x,
+                pos.y + info->yoff,
+                //pos.y,
+                info->x1 - info->x0,
+                info->y1 - info->y0
+            };
 
             SDL_RenderCopy(renderer, font_data->atlas, &src_rect, &dst_rect);
             pos.x += info->xadvance;
