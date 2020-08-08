@@ -9,12 +9,23 @@
 
 #define BUFFER_SIZE 16384
 
+
+
+
+unsigned char ttf_buffer[1<<20];
+unsigned char temp_bitmap[512*512];
+
+stbtt_bakedchar cdata[96]; // ASCII 32..126 is 95 glyphs
+
+
+
+
 static float   tex_buf[BUFFER_SIZE *  8];
 static float  vert_buf[BUFFER_SIZE *  8];
 static uint8_t color_buf[BUFFER_SIZE * 16];
 static uint32_t  index_buf[BUFFER_SIZE *  6];
 
-static char ttf_buffer[BUFFER_SIZE * 32];
+//static char ttf_buffer[BUFFER_SIZE * 32];
 static stbtt_fontinfo font;
 
 static int width  = 300;
@@ -45,21 +56,107 @@ void r_init(void) {
     "Sine Tuner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
     width, height, 0);
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  r_init_font();
+  //r_init_font();
+  r_init_font2();
 }
+
+
+typedef struct {
+    stbtt_fontinfo* info;
+    stbtt_packedchar* chars;
+    SDL_Texture* atlas;
+    int texture_size;
+    float size;
+    float scale;
+    int ascent;
+    int baseline;
+} FontData;
+FontData* font_data;
+
+
+void r_init_font2() {
+    float size = 30.0;
+    FILE *ff = fopen("monospace.ttf", "rb");
+    if (!ff) { printf("font file not found\n"); exit(1); }
+    fseek(ff, 0, SEEK_END);
+    int fsize = ftell(ff);
+    rewind(ff);
+    unsigned char* buffer = malloc(1<<20);
+    fread(buffer, 1, fsize, ff);
+
+    // TODO close file handle
+
+    font_data = calloc(sizeof(FontData), 1);
+    font_data->info = malloc(sizeof(stbtt_fontinfo)); // use calloc here?
+    font_data->chars = malloc(sizeof(stbtt_packedchar) * 96);
+
+    if(stbtt_InitFont(font_data->info, buffer, 0) == 0) {
+        free(buffer);
+        return;
+    }
+
+    // fill bitmap atlas with packed characters
+    unsigned char* bitmap = NULL;
+    font_data->texture_size = 32;
+    while(1) {
+        bitmap = malloc(font_data->texture_size * font_data->texture_size);
+        stbtt_pack_context pack_context;
+        stbtt_PackBegin(&pack_context, bitmap, font_data->texture_size, font_data->texture_size, 0, 1, 0);
+        stbtt_PackSetOversampling(&pack_context, 1, 1);
+        if(!stbtt_PackFontRange(&pack_context, buffer, 0, size, 32, 95, font_data->chars)) {
+            // too small
+            free(bitmap);
+            stbtt_PackEnd(&pack_context);
+            font_data->texture_size *= 2;
+        } else {
+            stbtt_PackEnd(&pack_context);
+            break;
+        }
+    }
+
+    // convert bitmap to texture
+    font_data->atlas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, font_data->texture_size, font_data->texture_size);
+    SDL_SetTextureBlendMode(font_data->atlas, SDL_BLENDMODE_BLEND);
+
+    Uint32* pixels = malloc(font_data->texture_size * font_data->texture_size * sizeof(Uint32));
+    static SDL_PixelFormat* format = NULL;
+    if(format == NULL) format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+    for(int i = 0; i < font_data->texture_size * font_data->texture_size; i++) {
+        pixels[i] = SDL_MapRGBA(format, 0xff, 0xff, 0xff, bitmap[i]);
+    }
+    SDL_UpdateTexture(font_data->atlas, NULL, pixels, font_data->texture_size * sizeof(Uint32));
+    free(pixels);
+    free(bitmap);
+
+    // setup additional info
+    font_data->scale = stbtt_ScaleForPixelHeight(font_data->info, size);
+    stbtt_GetFontVMetrics(font_data->info, &font_data->ascent, 0, 0);
+    font_data->baseline = (int) (font_data->ascent * font_data->scale);
+
+    free(buffer);
+}
+
+
 
 
 void r_init_font(void) {
-   FILE *ff = fopen("font.ttf", "rb");
-   if (!ff) { printf("font file not found\n"); exit(1); }
-   fseek(ff, 0, SEEK_END);
-   int fsize = ftell(ff);
-   rewind(ff);
-   fread(ttf_buffer, 1, fsize, ff);
+    FILE *ff = fopen("font.ttf", "rb");
+    if (!ff) { printf("font file not found\n"); exit(1); }
+    fseek(ff, 0, SEEK_END);
+    int fsize = ftell(ff);
+    rewind(ff);
+    fread(ttf_buffer, 1, fsize, ff);
 
-   stbtt_InitFont(&font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer,0));
+    // FontInfo* font_info = calloc(sizeof(FontInfo), 1);
+    // font_info->info = malloc(sizeof(stbtt_fontinfo));
+    // font_info->chars = malloc(sizeof(stbtt_packedchar) * 96);
+
+    // stbtt_InitFont(font_info->info, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer, 0));
+
+   //fread(ttf_buffer, 1, 1<<20, fopen("c:/windows/fonts/times.ttf", "rb"));
+   //stbtt_BakeFontBitmap(ttf_buffer, 0, 20.0, temp_bitmap,
+   //        512, 512, 32, 96, cdata); // no guarantee this fits!
 }
-
 
 static void flush(void) { // I'm not sure if this flush is needed?
   if (buf_idx == 0) { return; }
@@ -128,7 +225,123 @@ void r_draw_rect(mu_Rect rect, mu_Color color) {
 
 
 void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
+    SDL_SetTextureColorMod(font_data->atlas, color.r, color.g, color.b);
+    SDL_SetTextureAlphaMod(font_data->atlas, color.a);
+    for(int i = 0; text[i]; i++) {
+        // Check char is within ascii range
+        if ((int)text[i] >= 32 && (int)text[i] < 128) {
+            stbtt_packedchar* info = &font_data->chars[text[i] - 32];
+            SDL_Rect src_rect = {info->x0, info->y0, info->x1 - info->x0, info->y1 - info->y0};
+            SDL_Rect dst_rect = {pos.x + info->xoff, pos.y + info->yoff, info->x1 - info->x0, info->y1 - info->y0};
 
+            SDL_RenderCopy(renderer, font_data->atlas, &src_rect, &dst_rect);
+            pos.x += info->xadvance;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //SDL_Texture * texture = SDL_CreateTexture(
+    //    renderer,
+    //    //SDL_PIXELFORMAT_ARGB8888,
+    //    //SDL_PIXELFORMAT_RGBA8888,
+    //    SDL_PIXELFORMAT_RGBA32,
+    //    SDL_TEXTUREACCESS_STATIC,
+    //    cdata[10].x1-cdata[10].x0,
+    //    cdata[10].y1-cdata[10].y0
+    //);
+    //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    //SDL_PixelFormat* format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+
+    //Uint32* pixels = malloc(10000 * sizeof(Uint32));
+    //for(int i = 0; i < 10000; i++) {
+    //    pixels[i] = SDL_MapRGBA(format, 0xff, 0xff, 0xff, temp_bitmap[i]);
+    //}
+
+    //SDL_UpdateTexture(texture, NULL, pixels, 10000 * sizeof(Uint32));
+    ////SDL_UpdateTexture(texture, NULL, temp_bitmap, cdata[10].y1-cdata[10].y0);
+    //SDL_RenderCopy(renderer, texture, NULL, NULL);
+    ////SDL_RenderPresent(renderer);
+
+
+
+
+
+    // FontInfo* font = calloc(sizeof(FontInfo), 1);
+    // font->info = malloc(sizeof(stbtt_fontinfo));
+    // font->chars = malloc(sizeof(stbtt_packedchar) * 96);
+
+    // int index = text[0] - 32;
+
+    // SDL_Rect src;
+    // src.x = cdata[index].x0;
+    // src.y = cdata[index].y0;
+    // src.w = cdata[index].x1 - cdata[index].x0;
+    // src.h = cdata[index].y1 - cdata[index].y0;
+
+    // SDL_Rect dest;
+    // src.x = pos.x;
+    // src.y = pos.y;
+    // src.w = 20;
+    // src.h = 20;
+
+    // SDL_Texture * texture = SDL_CreateTexture(
+    //     renderer,
+    //     SDL_PIXELFORMAT_RGBA32,
+    //     SDL_TEXTUREACCESS_STATIC,
+    //     40,
+    //     40
+    // );
+    // SDL_Rect rect;
+    // rect.x = pos.x;
+    // rect.y = pos.y;
+    // rect.w = 20;
+    // rect.h = 20;
+    // SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+
+
+
+
+
+
+    // SDL_Rect rect;
+    // rect.x = pos.x;
+    // rect.y = pos.y;
+    // rect.w = 20;
+    // rect.h = 20;
+    // SDL_RenderFillRect(renderer, &rect);
+
+
+
+/*
    unsigned char *bitmap = 0;
 
    int font_size = 20;
@@ -166,6 +379,11 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
       if (!text[ind+1]) break;
       xpos += scale*advance;
    }
+*/
+
+
+
+
 
    // SDL_RenderPresent(renderer);
    // SDL_Event event;
