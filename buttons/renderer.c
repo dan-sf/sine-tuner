@@ -189,12 +189,12 @@ void r_draw_text(const char *text, mu_Vec2 pos, mu_Color color) {
                 info->y1 - info->y0
             };
             SDL_Rect dst_rect = {
-                // Need to update this so that we are fully centered in the
-                // button
                 pos.x + info->xoff,
-                //pos.x,
-                pos.y + info->yoff,
-                //pos.y,
+                // @Robustness: Here we center the letter within the button in
+                // the y direction. This will not work for multiple characters
+                // as each char is a different height, we should update this
+                // code to handle centering text properly
+                pos.y + info->yoff + (info->y1 - info->y0)/2,
                 info->x1 - info->x0,
                 info->y1 - info->y0
             };
