@@ -64,17 +64,14 @@ static void main_window(mu_Context *ctx) {
         //if (mu_button(ctx, "Button 5")) { /* write_log("Pressed button 5"); */ }
         if (mu_button_ex(ctx, "B", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
         //if (mu_button(ctx, "Button 6")) { /* printf("Pressed button 6"); */ }
-        if (mu_button_ex(ctx, "e", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
-      //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
-      //mu_label(ctx, "Test buttons 2:");
-      //if (mu_button(ctx, "Button 3")) { write_log("Pressed button 3"); }
-      //if (mu_button(ctx, "Popup")) { mu_open_popup(ctx, "Test Popup"); }
-      //if (mu_begin_popup(ctx, "Test Popup")) {
-      //  mu_button(ctx, "Hello");
-      //  mu_button(ctx, "World");
-      //  mu_end_popup(ctx);
-      //}
-    //}
+
+        // Since we are naming this button E (same as the low e) we need to set
+        // a unique value to attach to the button so it is separate from the
+        // low e button
+        int high_e = 1;
+        mu_push_id(ctx, &high_e, sizeof(high_e));
+        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        mu_pop_id(ctx);
 
     mu_end_window(ctx);
   }
