@@ -1,5 +1,5 @@
 #!/bin/bash
 
-CFLAGS="-I../src -Wall -std=c11 -pedantic `sdl2-config --libs` -lm -O0 -g"
-gcc buttons.c renderer.c microui.c $CFLAGS
+CFLAGS="-Wall -std=c11 -pedantic `sdl2-config --libs` -lm -O0 -g -o sine_tuner"
+gcc main.c renderer.c microui.c $CFLAGS
 
