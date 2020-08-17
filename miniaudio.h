@@ -5531,7 +5531,7 @@ typedef struct
     ma_waveform_config config;
     double advance;
     double time;
-} ma_waveform;
+} ma_waveform; // @Here
 
 MA_API ma_result ma_waveform_init(const ma_waveform_config* pConfig, ma_waveform* pWaveform);
 MA_API ma_uint64 ma_waveform_read_pcm_frames(ma_waveform* pWaveform, void* pFramesOut, ma_uint64 frameCount);

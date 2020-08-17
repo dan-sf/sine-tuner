@@ -3,8 +3,10 @@
 #include "renderer.h"
 #include "microui.h"
 
+#include "audio.c"
 
 static float bg[3] = { 90, 95, 100 };
+
 
 static void main_window(mu_Context *ctx) {
     if (mu_begin_window_ex(ctx, "Main Window", mu_rect(0, 0, 300, 452), MU_OPT_NOCLOSE | MU_OPT_NOTITLE | MU_OPT_NORESIZE | MU_OPT_EXPANDED | MU_OPT_NOSCROLL)) {
@@ -16,7 +18,9 @@ static void main_window(mu_Context *ctx) {
         int button_height = 145;
 
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            printf("Button E pressed\n");
+        }
         if (mu_button_ex(ctx, "A", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
 
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
@@ -74,8 +78,10 @@ static int text_height(mu_Font font) {
 
 int main(int argc, char **argv) {
     /* init SDL and renderer */
-    SDL_Init(SDL_INIT_EVERYTHING);
+    SDL_Init(SDL_INIT_EVERYTHING); // @TODO: Only init what we need
     r_init();
+
+    a_init();
 
     /* init microui */
     mu_Context *ctx = malloc(sizeof(mu_Context));
@@ -129,6 +135,8 @@ int main(int argc, char **argv) {
 
         r_present();
     }
+
+    a_cleanup();
 
     return 0;
 }
