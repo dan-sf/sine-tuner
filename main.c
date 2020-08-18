@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         r_present();
     }
 
-    a_cleanup();
+    //a_cleanup();
 
     return 0;
 }
