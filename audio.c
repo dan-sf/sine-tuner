@@ -22,16 +22,15 @@ typedef struct {
 } Audio_Data;
 
 static SDL_AudioDeviceID device;
-static void *sound_buffer;
 static Audio_Data *audio_data;
 
 void a_init(void) {
     SDL_AudioSpec wanted_spec;
     SDL_AudioSpec obtained_spec;
 
-    audio_data = (Audio_Data *)malloc(sizeof(Audio_Data)); // calloc here for setting to 0?
+    audio_data = malloc(sizeof(Audio_Data)); // calloc here for setting to 0?
 
-    audio_data->buffer = (Sint16 *)malloc(sizeof(Sint16) * 8192);
+    audio_data->buffer = malloc(sizeof(Sint16) * 8192);
     audio_data->play_cursor = 0;
     audio_data->last_sample_index = 0;
     audio_data->size = 8192;
@@ -56,15 +55,15 @@ void a_init(void) {
         return;
     }
 
-    // generate_wave();
-    // // Start playing
-    // SDL_PauseAudioDevice(device, 0);
+    generate_wave();
 
-    // // Wait for SECONDS number of seconds
-    // SDL_Delay(SECONDS * 1000);
+    // Start playing
+    SDL_PauseAudioDevice(device, 0);
 
-    // a_cleanup();
+    // Wait for SECONDS number of seconds
+    SDL_Delay(SECONDS * 1000);
 
+    a_cleanup();
 }
 
 void generate_wave() {
@@ -80,8 +79,11 @@ void generate_wave() {
 
     int start = audio_data->last_sample_index % bytes_per_period;
 
-    int sample_index;
-    for (sample_index = start; sample_index < (sample_count+start); sample_index++) {
+    //int sample_index;
+    //for (sample_index = start; sample_index < (sample_count+start); sample_index++) {
+
+    // Here I was overwriting the buffer :(
+    for (int sample_index = 0; sample_index < audio_data->size/2; sample_index++) {
 
         // Create the sine wav
         double two_pi = 2.0 * PI;
@@ -116,9 +118,8 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 
 void a_cleanup() {
     // Shut everything down
-    SDL_PauseAudioDevice(device, 0);
+    SDL_PauseAudioDevice(device, 1);
     SDL_CloseAudioDevice(device);
-    // @TODO We have a free memory issue here...
     free(audio_data->buffer);
     free(audio_data);
 }
