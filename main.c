@@ -75,6 +75,11 @@ static int text_height(mu_Font font) {
   return r_get_text_height();
 }
 
+void cleanup() {
+    // @TODO: Run any other cleanup functions (ie renderer or sdl)
+    a_cleanup();
+}
+
 
 int main(int argc, char **argv) {
     /* init SDL and renderer */
@@ -82,12 +87,17 @@ int main(int argc, char **argv) {
     r_init();
 
     a_init();
+    atexit(cleanup);
 
     /* init microui */
-    mu_Context *ctx = malloc(sizeof(mu_Context));
+    mu_Context *ctx = malloc(sizeof(mu_Context)); // @Note: This is never freed
     mu_init(ctx);
     ctx->text_width = text_width;
     ctx->text_height = text_height;
+
+    // Start playing audio
+    generate_wave();
+    SDL_PauseAudioDevice(device, 0);
 
     /* main loop */
     for (;;) {
@@ -135,8 +145,6 @@ int main(int argc, char **argv) {
 
         r_present();
     }
-
-    //a_cleanup();
 
     return 0;
 }

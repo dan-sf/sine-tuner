@@ -55,15 +55,15 @@ void a_init(void) {
         return;
     }
 
-    generate_wave();
+    //generate_wave();
 
-    // Start playing
-    SDL_PauseAudioDevice(device, 0);
+    //// Start playing
+    //SDL_PauseAudioDevice(device, 0);
 
-    // Wait for SECONDS number of seconds
-    SDL_Delay(SECONDS * 1000);
+    //// Wait for SECONDS number of seconds
+    //SDL_Delay(SECONDS * 1000);
 
-    a_cleanup();
+    //a_cleanup();
 }
 
 void generate_wave() {
