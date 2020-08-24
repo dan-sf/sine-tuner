@@ -77,6 +77,7 @@ static int text_height(mu_Font font) {
 
 void cleanup() {
     // @TODO: Run any other cleanup functions (ie renderer or sdl)
+    // @Note: I'm not sure how necessary this function actually is, we should investigate if this is really needed
     a_cleanup();
 }
 

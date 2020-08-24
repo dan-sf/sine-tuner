@@ -18,6 +18,8 @@ typedef struct {
     Uint16 tone_volume;
     int last_sample_index;
     int tone_hz;
+    double advance;
+    double time;
     Sint16 *buffer;
 } Audio_Data;
 
@@ -32,9 +34,11 @@ void a_init(void) {
 
     audio_data->buffer = malloc(sizeof(Sint16) * 8192);
     audio_data->play_cursor = 0;
-    audio_data->last_sample_index = 0;
+    audio_data->last_sample_index = -1;
     audio_data->size = 8192;
-    audio_data->samples_per_second = 44000;
+    audio_data->samples_per_second = 44000; // TODO: Make all the sound related fields doubles
+    audio_data->advance = 1.0/44000.0;
+    audio_data->time = 0.0;
     audio_data->tone_volume = 5000;
     audio_data->tone_hz = 440;
 
@@ -55,7 +59,7 @@ void a_init(void) {
         return;
     }
 
-    //generate_wave();
+    generate_wave();
 
     //// Start playing
     //SDL_PauseAudioDevice(device, 0);
@@ -72,22 +76,34 @@ void generate_wave() {
 
     Sint16 *sample_write = audio_data->buffer;
 
-    int sine_wave_period = audio_data->samples_per_second / audio_data->tone_hz;
-    int bytes_per_period = sine_wave_period * bytes_per_sample;
+    int samples_per_period = audio_data->samples_per_second / audio_data->tone_hz; // I think this is samples per period ...
+    int bytes_per_period = samples_per_period * bytes_per_sample;
     int sample_count = bytes_to_write / bytes_per_sample;
     Sint16 sample_value;
 
-    int start = audio_data->last_sample_index % bytes_per_period;
+    //int start = audio_data->last_sample_index % samples_per_period;
+    int start = audio_data->last_sample_index + 1;
+    //int start = audio_data->last_sample_index; // % samples_per_period;
 
-    //int sample_index;
     //for (sample_index = start; sample_index < (sample_count+start); sample_index++) {
 
     // Here I was overwriting the buffer :(
-    for (int sample_index = 0; sample_index < audio_data->size/2; sample_index++) {
+    int sample_index;
+    for (sample_index = 0; sample_index < audio_data->size/2; sample_index++) {
+        if (start == audio_data->samples_per_second) start = 0;
 
         // Create the sine wav
         double two_pi = 2.0 * PI;
-        double t = (double)sample_index / (double)audio_data->samples_per_second;
+
+        //double t = ((double)sample_index+(double)start) / (double)audio_data->samples_per_second;
+        double t = audio_data->time;
+
+        // It might be better to not even make this check, overflowing a double would take a very long time... (just getting to 44K will take 12 hours)
+        if (t == 44000.0) {
+            audio_data->time = 0.0;
+            t = audio_data->time;
+        }
+
         double sval = audio_data->tone_volume * sin(two_pi * (double)audio_data->tone_hz * t);
         sample_value = (Sint16) sval;
 
@@ -95,7 +111,10 @@ void generate_wave() {
         for (int channel = 0; channel < CHANNELS; channel++) {
             *sample_write++ = sample_value;
         }
+
+        audio_data->time += audio_data->advance;
     }
+    audio_data->last_sample_index = start + sample_index;
 }
 
 
@@ -104,16 +123,18 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
     // Cast the userdata to Audio_Data so we can use it
     Audio_Data *audio_data = (Audio_Data *) userdata;
 
-    // // If SDL asks for data past the end of the generated wave we need to just
-    // // give it the point in the period that it asked for but at the beginning
-    // // of the generated wave. We can do this by taking the modulus of the
-    // // play_cursor and the bytes_per_period
-    // if (audio_data->play_cursor + len > audio_data->size) {
-    //     audio_data->play_cursor %= audio_data->bytes_per_period;
-    // }
+    //int samples_per_period = audio_data->samples_per_second / audio_data->tone_hz;
+    //audio_data->last_sample_index += len;
+    //audio_data->last_sample_index %= samples_per_period;
+    //printf("%d\n", audio_data->last_sample_index);
 
+    // Here we should check to see how much data we are writing to the output
+    // buffer. We should use the input state of the wave and that output to set
+    // the end state for the sine wave so we can pick up from there once we get
+    // called again
     memcpy(stream, (Uint8 *)audio_data->buffer, len);
-    // audio_data->play_cursor += len;
+
+    generate_wave();
 }
 
 void a_cleanup() {
