@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "renderer.h"
 #include "microui.h"
 
@@ -7,6 +8,12 @@
 
 static float bg[3] = { 90, 95, 100 };
 
+static bool e_is_playing = false;
+static bool a_is_playing = false;
+static bool d_is_playing = false;
+static bool g_is_playing = false;
+static bool b_is_playing = false;
+static bool e_high_is_playing = false;
 
 static void main_window(mu_Context *ctx) {
     if (mu_begin_window_ex(ctx, "Main Window", mu_rect(0, 0, 300, 452), MU_OPT_NOCLOSE | MU_OPT_NOTITLE | MU_OPT_NORESIZE | MU_OPT_EXPANDED | MU_OPT_NOSCROLL)) {
@@ -19,23 +26,69 @@ static void main_window(mu_Context *ctx) {
 
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
         if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
-            printf("Button E pressed\n");
+            if (e_is_playing) {
+                a_stop_playing();
+                e_is_playing = false;
+            } else {
+                a_set_tone(82.41);
+                e_is_playing = true;
+            }
         }
-        if (mu_button_ex(ctx, "A", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "A", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            if (a_is_playing) {
+                a_stop_playing();
+                a_is_playing = false;
+            } else {
+                a_set_tone(110.0);
+                a_is_playing = true;
+            }
+        }
 
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (mu_button_ex(ctx, "D", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
-        if (mu_button_ex(ctx, "G", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "D", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            if (d_is_playing) {
+                a_stop_playing();
+                d_is_playing = false;
+            } else {
+                a_set_tone(146.83);
+                d_is_playing = true;
+            }
+        }
+        if (mu_button_ex(ctx, "G", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            if (g_is_playing) {
+                a_stop_playing();
+                g_is_playing = false;
+            } else {
+                a_set_tone(196.0);
+                g_is_playing = true;
+            }
+        }
 
         mu_layout_row(ctx, 2, (int[]) { button_width, button_width }, button_height);
-        if (mu_button_ex(ctx, "B", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "B", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            if (b_is_playing) {
+                a_stop_playing();
+                b_is_playing = false;
+            } else {
+                a_set_tone(246.94);
+                b_is_playing = true;
+            }
+        }
 
         // Since we are naming this button E (same as the low e) we need to set
         // a unique value to attach to the button so it is separate from the
         // low e button
         int high_e = 1;
         mu_push_id(ctx, &high_e, sizeof(high_e));
-        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) { }
+        if (mu_button_ex(ctx, "E", 0, MU_OPT_HOLDFOCUS | MU_OPT_ALIGNCENTER)) {
+            if (e_high_is_playing) {
+                a_stop_playing();
+                e_high_is_playing = false;
+            } else {
+                a_set_tone(329.63);
+                e_high_is_playing = true;
+            }
+        }
         mu_pop_id(ctx);
 
         mu_end_window(ctx);

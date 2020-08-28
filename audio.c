@@ -23,6 +23,17 @@ typedef struct {
 static SDL_AudioDeviceID device;
 static Audio_Data *audio_data;
 
+void a_set_tone(double tone_hz) {
+    audio_data->time = 0.0;
+    audio_data->tone_hz = tone_hz;
+}
+
+void a_stop_playing() {
+    SDL_ClearQueuedAudio(device);
+    //SDL_PauseAudioDevice(device, 1);
+    a_set_tone(0.0);
+}
+
 void a_init(void) {
     SDL_AudioSpec wanted_spec;
     SDL_AudioSpec obtained_spec;
@@ -35,7 +46,7 @@ void a_init(void) {
     audio_data->advance = 1.0/audio_data->samples_per_second;
     audio_data->time = 0.0;
     audio_data->tone_volume = 5000.0;
-    audio_data->tone_hz = 440.0;
+    audio_data->tone_hz = 0.0;
 
     wanted_spec.freq = audio_data->samples_per_second;
     wanted_spec.format = AUDIO_S16;
@@ -53,9 +64,6 @@ void a_init(void) {
         printf("SDL_OpenAudioDevice error: %s\n", SDL_GetError());
         return;
     }
-
-    // Init the wave buffer
-    generate_wave();
 }
 
 void generate_wave() {
@@ -93,18 +101,17 @@ void generate_wave() {
 }
 
 void audio_callback(void *userdata, Uint8 *stream, int len) {
-
     // Cast the userdata to Audio_Data so we can use it
     Audio_Data *audio_data = (Audio_Data *) userdata;
+
+    // Generate the next wave
+    generate_wave();
 
     // @TODO: Here we should check to make sure that the len is less than the
     // buffer size. If the len was larger we'd be trying to copy mem we don't
     // have access to. We may also want to be more dynamic and allocate a new
     // larger buffer if the len asked for is larger than the current buffer
     memcpy(stream, (Uint8 *)audio_data->buffer, len);
-
-    // Generate the next wave
-    generate_wave(); // @Latency: should this be done before the copy?
 }
 
 void a_cleanup() {
