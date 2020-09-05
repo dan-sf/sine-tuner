@@ -15,7 +15,7 @@ typedef struct {
 Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
 Color gray = { .r = 170, .g = 170, .b = 170, .a = 170 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 0 };
-Color background_color = { .r = 0, .g = 0, .b = 119, .a = 0 };
+Color background_color = { .r = 150, .g = 150, .b = 240, .a = 0 };
 
 struct UIState {
     int mouse_x;
@@ -30,13 +30,22 @@ ui_state = {0, 0, 0, 0, 0}; // Global ui state
 // Simplified interface to SDL's fillrect call
 void drawrect(int x, int y, int w, int h, Color color)
 {
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_Rect rect;
     rect.x = x;
     rect.y = y;
     rect.w = w;
     rect.h = h;
+
+    SDL_Rect brect;
+    brect.x = x;
+    brect.y = y;
+    brect.w = w+4;
+    brect.h = h+4;
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, black.r, black.g, black.b, black.a);
+    SDL_RenderDrawRect(renderer, &rect);
 }
 
 // Prepare for IMGUI code
@@ -51,32 +60,6 @@ void imgui_finish() {
     } else {
         if (ui_state.active_item == 0) ui_state.active_item = -1;
     }
-}
-
-// Rendering function
-void render() {   
-    // clear screen
-    drawrect(0,0,640,480,background_color);
-
-    imgui_prepare();
-
-    button(1, 50, 50);
-    button(2, 150, 50);
-
-    if (button(3, 50, 150)) {
-        background_color.r = 500;
-    }
-
-    if (button(4, 150, 150))
-        exit(0);
-
-    imgui_finish();
-
-    // update the screen
-    SDL_RenderPresent(renderer);
-
-    // don't take all the cpu time
-    SDL_Delay(10); 
 }
 
 int region_hit(int x, int y, int w, int h) {
@@ -118,6 +101,32 @@ int button(int id, int x, int y) {
     return 0;
 }
 
+// Rendering function
+void render() {   
+    // clear screen
+    drawrect(0,0,640,480,background_color);
+
+    imgui_prepare();
+
+    button(1, 50, 50);
+    button(2, 150, 50);
+
+    if (button(3, 50, 150)) {
+        background_color.r = 500;
+    }
+
+    if (button(4, 150, 150))
+        exit(0);
+
+    imgui_finish();
+
+    // update the screen
+    SDL_RenderPresent(renderer);
+
+    // don't take all the cpu time
+    SDL_Delay(10); 
+}
+
 // Entry point
 int main(int argc, char *argv[]) {
     // Initialize SDL's subsystems - in this case, only video.
@@ -137,12 +146,11 @@ int main(int argc, char *argv[]) {
       640, 480, 0);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    // // If we fail, return error.
-    //   if (gScreen == NULL) 
-    // {
-    //       fprintf(stderr, "Unable to set up video: %s\n", SDL_GetError());
-    //       exit(1);
-    //   }
+    // If we fail, return error.
+    if (window == NULL || renderer == NULL) {
+        fprintf(stderr, "Unable to set up window/renderer: %s\n", SDL_GetError());
+        exit(1);
+    }
 
     // Main loop: loop forever.
     while (1) {
@@ -180,5 +188,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
     return 0;
 }
