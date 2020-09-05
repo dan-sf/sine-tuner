@@ -12,13 +12,18 @@ typedef struct {
     int a;
 } Color;
 
+Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
+Color gray = { .r = 170, .g = 170, .b = 170, .a = 170 };
+Color black = { .r = 0, .g = 0, .b = 0, .a = 0 };
+Color background_color = { .r = 0, .g = 0, .b = 119, .a = 0 };
+
 struct UIState {
     int mouse_x;
     int mouse_y;
     int mouse_down;
 
     int hot_item;
-    int action_item;
+    int active_item;
 }
 ui_state = {0, 0, 0, 0, 0}; // Global ui state
 
@@ -34,20 +39,38 @@ void drawrect(int x, int y, int w, int h, Color color)
     SDL_RenderFillRect(renderer, &rect);
 }
 
+// Prepare for IMGUI code
+void imgui_prepare() {
+    ui_state.hot_item = 0;
+}
+
+// Finish up after IMGUI code
+void imgui_finish() {
+    if (ui_state.mouse_down == 0) {
+        ui_state.active_item = 0;
+    } else {
+        if (ui_state.active_item == 0) ui_state.active_item = -1;
+    }
+}
+
 // Rendering function
 void render() {   
     // clear screen
-    Color color;
-    color.r = 50; color.b = 50; color.g = 50; color.a = 0xff;
-    drawrect(0,0,640,480,color);
+    drawrect(0,0,640,480,background_color);
 
-    // test that the fillrect is working
-    color.r = 230; color.b = 230; color.g = 230;
-    // drawrect(64,48,64,48,color);
+    imgui_prepare();
 
-    // testing ui_state
-    if (ui_state.mouse_down) { color.b = 0; }
-    drawrect(ui_state.mouse_x, ui_state.mouse_y, 64, 48, color);
+    button(1, 50, 50);
+    button(2, 150, 50);
+
+    if (button(3, 50, 150)) {
+        background_color.r = 500;
+    }
+
+    if (button(4, 150, 150))
+        exit(0);
+
+    imgui_finish();
 
     // update the screen
     SDL_RenderPresent(renderer);
@@ -70,6 +93,29 @@ int button(int id, int x, int y) {
             ui_state.active_item = id;
         }
     }
+
+    // Render button 
+    drawrect(x+8, y+8, 64, 48, black);
+    if (ui_state.hot_item == id) {
+        if (ui_state.active_item == id) {
+            // Button is both 'hot' and 'active'
+            drawrect(x+2, y+2, 64, 48, white);
+        } else {
+            // Button is merely 'hot'
+            drawrect(x, y, 64, 48, white);
+        }
+    } else {
+        // button is not hot, but it may be active    
+        drawrect(x, y, 64, 48, gray);
+    }
+
+  // If button is hot and active, but mouse button is not
+  // down, the user must have clicked the button.
+    if (ui_state.mouse_down == 0 && ui_state.hot_item == id && ui_state.active_item == id)
+        return 1;
+
+    // Otherwise, no clicky.
+    return 0;
 }
 
 // Entry point
