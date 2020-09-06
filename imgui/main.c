@@ -13,9 +13,24 @@ typedef struct {
 } Color;
 
 Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
-Color gray = { .r = 170, .g = 170, .b = 170, .a = 170 };
+Color gray1 = { .r = 80, .g = 80, .b = 80, .a = 80 };
+Color gray2 = { .r = 170, .g = 170, .b = 170, .a = 170 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 0 };
 Color background_color = { .r = 150, .g = 150, .b = 240, .a = 0 };
+
+// Button colors, make this a struct of colors...
+
+Color passive = { .r = 50, .g = 50, .b = 50, .a = 50 };
+Color hover = { .r = 80, .g = 80, .b = 80, .a = 80 };
+Color pressed = { .r = 170, .g = 170, .b = 170, .a = 170 };
+Color active = { .r = 225, .g = 225, .b = 225, .a = 225 };
+
+// off/passive
+// hot/hovered
+// pressed (mouse down on the button)
+// active/on (button is in the on state)
+
+
 
 struct UIState {
     int mouse_x;
@@ -23,6 +38,7 @@ struct UIState {
     int mouse_down;
 
     int hot_item;
+    int pressed_item; // This is kind of specific to buttons so we might want to handle this on the button itself?
     int active_item;
 }
 ui_state = {0, 0, 0, 0, 0}; // Global ui state
@@ -55,10 +71,11 @@ void imgui_prepare() {
 
 // Finish up after IMGUI code
 void imgui_finish() {
+    // Here we clear the active item, we might need to not do that so we can
+    // keep buttons active across frames. Either that or we let the caller
+    // handle if the button is currently active...
     if (ui_state.mouse_down == 0) {
-        ui_state.active_item = 0;
-    } else {
-        if (ui_state.active_item == 0) ui_state.active_item = -1;
+        ui_state.pressed_item = 0;
     }
 }
 
@@ -69,54 +86,93 @@ int region_hit(int x, int y, int w, int h) {
     return 1;
 }
 
-int button(int id, int x, int y) {
+int button(int id, int x, int y, int is_active) {
     if (region_hit(x, y, 64, 48)) {
         ui_state.hot_item = id;
-        if (ui_state.active_item == 0 && ui_state.mouse_down) {
-            ui_state.active_item = id;
+        if (ui_state.mouse_down) {
+            ui_state.pressed_item = id;
         }
     }
 
     // Render button 
-    drawrect(x+8, y+8, 64, 48, black);
+    // drawrect(x+8, y+8, 64, 48, black);
     if (ui_state.hot_item == id) {
-        if (ui_state.active_item == id) {
+        if (ui_state.pressed_item == id) {
             // Button is both 'hot' and 'active'
-            drawrect(x+2, y+2, 64, 48, white);
+            //if (is_active) drawrect(x, y, 64, 48, hover);
+            //else drawrect(x, y, 64, 48, active);
+            drawrect(x, y, 64, 48, pressed);
         } else {
             // Button is merely 'hot'
-            drawrect(x, y, 64, 48, white);
+            if (is_active)
+                drawrect(x, y, 64, 48, active);
+            else
+                drawrect(x, y, 64, 48, hover);
         }
     } else {
         // button is not hot, but it may be active    
-        drawrect(x, y, 64, 48, gray);
+        if (is_active) drawrect(x, y, 64, 48, active);
+        else drawrect(x, y, 64, 48, passive);
     }
 
   // If button is hot and active, but mouse button is not
   // down, the user must have clicked the button.
-    if (ui_state.mouse_down == 0 && ui_state.hot_item == id && ui_state.active_item == id)
+    if (ui_state.mouse_down == 0 && ui_state.hot_item == id && ui_state.pressed_item == id)
         return 1;
 
     // Otherwise, no clicky.
     return 0;
 }
 
+// Store global active state for the buttons
+static int button1_active = 0;
+static int button2_active = 0;
+static int button3_active = 0;
+static int button4_active = 0;
+
 // Rendering function
 void render() {   
     // clear screen
-    drawrect(0,0,640,480,background_color);
+    drawrect(0, 0, 640, 480, background_color);
 
     imgui_prepare();
 
-    button(1, 50, 50);
-    button(2, 150, 50);
+    // There is probably a better way to handle the button active state, we
+    // might want to put that into an array and have the indices map to button
+    // ids... We could then have a toggle_active function that only needs the
+    // id of the button
 
-    if (button(3, 50, 150)) {
-        background_color.r = 500;
+    if (button(1, 50, 50, button1_active)) {
+        printf("Button1 pressed\n");
+        button1_active ^= 1;
+        button2_active = 0;
+        button3_active = 0;
+        button4_active = 0;
     }
 
-    if (button(4, 150, 150))
-        exit(0);
+    if (button(2, 150, 50, button2_active)) {
+        printf("Button2 pressed\n");
+        button1_active = 0;
+        button2_active ^= 1;
+        button3_active = 0;
+        button4_active = 0;
+    }
+
+    if (button(3, 50, 150, button3_active)) {
+        printf("Button3 pressed\n");
+        button1_active = 0;
+        button2_active = 0;
+        button3_active ^= 1;
+        button4_active = 0;
+    }
+
+    if (button(4, 150, 150, button4_active)) {
+        printf("Button4 pressed\n");
+        button1_active = 0;
+        button2_active = 0;
+        button3_active = 0;
+        button4_active ^= 1;
+    }
 
     imgui_finish();
 
@@ -157,6 +213,8 @@ int main(int argc, char *argv[]) {
         // Render stuff
         render();
 
+        // We should probably render after handling all the events...
+
         // Poll for events, and handle the ones we care about.
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -168,12 +226,12 @@ int main(int argc, char *argv[]) {
                     break;
                 case SDL_MOUSEBUTTONDOWN:
                     // update button down state if left-clicking
-                    if (event.button.button == 1)
+                    if (event.button.button == SDL_BUTTON_LEFT)
                       ui_state.mouse_down = 1;
                     break;
                 case SDL_MOUSEBUTTONUP:
                     // update button down state if left-clicking
-                    if (event.button.button == 1)
+                    if (event.button.button == SDL_BUTTON_LEFT)
                       ui_state.mouse_down = 0;
                     break;
                 case SDL_KEYUP:
@@ -184,7 +242,7 @@ int main(int argc, char *argv[]) {
                     }
                 break;
                 case SDL_QUIT:
-                    return(0);
+                    return 0;
             }
         }
     }
