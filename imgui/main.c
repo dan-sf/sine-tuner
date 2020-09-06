@@ -12,25 +12,15 @@ typedef struct {
     int a;
 } Color;
 
-Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
-Color gray1 = { .r = 80, .g = 80, .b = 80, .a = 80 };
-Color gray2 = { .r = 170, .g = 170, .b = 170, .a = 170 };
-Color black = { .r = 0, .g = 0, .b = 0, .a = 0 };
-Color background_color = { .r = 150, .g = 150, .b = 240, .a = 0 };
 
 // Button colors, make this a struct of colors...
 
-Color passive = { .r = 50, .g = 50, .b = 50, .a = 50 };
-Color hover = { .r = 80, .g = 80, .b = 80, .a = 80 };
-Color pressed = { .r = 170, .g = 170, .b = 170, .a = 170 };
+Color background_color = { .r = 150, .g = 150, .b = 240, .a = 255 };
+Color black = { .r = 0, .g = 0, .b = 0, .a = 255 };
+Color passive = { .r = 50, .g = 50, .b = 50, .a = 255 };
+Color hover = { .r = 80, .g = 80, .b = 80, .a = 255 };
+Color pressed = { .r = 170, .g = 170, .b = 170, .a = 255 };
 Color active = { .r = 225, .g = 225, .b = 225, .a = 225 };
-
-// off/passive
-// hot/hovered
-// pressed (mouse down on the button)
-// active/on (button is in the on state)
-
-
 
 struct UIState {
     int mouse_x;
@@ -41,7 +31,7 @@ struct UIState {
     int pressed_item; // This is kind of specific to buttons so we might want to handle this on the button itself?
     int active_item;
 }
-ui_state = {0, 0, 0, 0, 0}; // Global ui state
+ui_state = {0, 0, 0, 0, 0, 0}; // Global ui state
 
 // Simplified interface to SDL's fillrect call
 void drawrect(int x, int y, int w, int h, Color color)
@@ -86,7 +76,7 @@ int region_hit(int x, int y, int w, int h) {
     return 1;
 }
 
-int button(int id, int x, int y, int is_active) {
+int button(int id, int x, int y) {
     if (region_hit(x, y, 64, 48)) {
         ui_state.hot_item = id;
         if (ui_state.mouse_down) {
@@ -95,40 +85,43 @@ int button(int id, int x, int y, int is_active) {
     }
 
     // Render button 
-    // drawrect(x+8, y+8, 64, 48, black);
     if (ui_state.hot_item == id) {
         if (ui_state.pressed_item == id) {
-            // Button is both 'hot' and 'active'
-            //if (is_active) drawrect(x, y, 64, 48, hover);
-            //else drawrect(x, y, 64, 48, active);
+            // Button is both hot and pressed
             drawrect(x, y, 64, 48, pressed);
         } else {
-            // Button is merely 'hot'
-            if (is_active)
+            // Button is either active or hovered
+            if (ui_state.active_item == id) {
                 drawrect(x, y, 64, 48, active);
-            else
+            } else {
                 drawrect(x, y, 64, 48, hover);
+            }
         }
     } else {
-        // button is not hot, but it may be active    
-        if (is_active) drawrect(x, y, 64, 48, active);
-        else drawrect(x, y, 64, 48, passive);
+        // Button is not hovered but could be either active or passive
+        if (ui_state.active_item == id) {
+            drawrect(x, y, 64, 48, active);
+        } else {
+            drawrect(x, y, 64, 48, passive);
+        }
     }
 
-  // If button is hot and active, but mouse button is not
-  // down, the user must have clicked the button.
-    if (ui_state.mouse_down == 0 && ui_state.hot_item == id && ui_state.pressed_item == id)
-        return 1;
+    // If button is hot and pressed, but mouse button is not
+    // down, the user must have clicked the button.
+    if (ui_state.mouse_down == 0 && ui_state.hot_item == id && ui_state.pressed_item == id) {
+        // If this button is active clear it, otherwise make it active
+        if (ui_state.active_item == id) {
+            ui_state.active_item = 0;
+        } else {
+            ui_state.active_item = id;
+        }
 
-    // Otherwise, no clicky.
+        return 1;
+    }
+
+    // No click
     return 0;
 }
-
-// Store global active state for the buttons
-static int button1_active = 0;
-static int button2_active = 0;
-static int button3_active = 0;
-static int button4_active = 0;
 
 // Rendering function
 void render() {   
@@ -137,41 +130,20 @@ void render() {
 
     imgui_prepare();
 
-    // There is probably a better way to handle the button active state, we
-    // might want to put that into an array and have the indices map to button
-    // ids... We could then have a toggle_active function that only needs the
-    // id of the button
-
-    if (button(1, 50, 50, button1_active)) {
+    if (button(1, 50, 50)) {
         printf("Button1 pressed\n");
-        button1_active ^= 1;
-        button2_active = 0;
-        button3_active = 0;
-        button4_active = 0;
     }
 
-    if (button(2, 150, 50, button2_active)) {
+    if (button(2, 150, 50)) {
         printf("Button2 pressed\n");
-        button1_active = 0;
-        button2_active ^= 1;
-        button3_active = 0;
-        button4_active = 0;
     }
 
-    if (button(3, 50, 150, button3_active)) {
+    if (button(3, 50, 150)) {
         printf("Button3 pressed\n");
-        button1_active = 0;
-        button2_active = 0;
-        button3_active ^= 1;
-        button4_active = 0;
     }
 
-    if (button(4, 150, 150, button4_active)) {
+    if (button(4, 150, 150)) {
         printf("Button4 pressed\n");
-        button1_active = 0;
-        button2_active = 0;
-        button3_active = 0;
-        button4_active ^= 1;
     }
 
     imgui_finish();
