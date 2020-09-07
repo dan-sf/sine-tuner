@@ -15,12 +15,17 @@ typedef struct {
 
 // Button colors, make this a struct of colors...
 
-Color background_color = { .r = 150, .g = 150, .b = 240, .a = 255 };
+Color background_color = { .r = 30, .g = 30, .b = 30, .a = 255 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 255 };
 Color passive = { .r = 50, .g = 50, .b = 50, .a = 255 };
 Color hover = { .r = 80, .g = 80, .b = 80, .a = 255 };
 Color pressed = { .r = 170, .g = 170, .b = 170, .a = 255 };
-Color active = { .r = 225, .g = 225, .b = 225, .a = 225 };
+Color active = { .r = 150, .g = 150, .b = 150, .a = 255 };
+
+int button_width = 140;
+int button_height = 140;
+int window_width = 4*3 + 2*140;
+int window_height = 4*4 + 3*140;
 
 struct UIState {
     int mouse_x;
@@ -77,7 +82,7 @@ int region_hit(int x, int y, int w, int h) {
 }
 
 int button(int id, int x, int y) {
-    if (region_hit(x, y, 64, 48)) {
+    if (region_hit(x, y, button_width, button_height)) {
         ui_state.hot_item = id;
         if (ui_state.mouse_down) {
             ui_state.pressed_item = id;
@@ -88,21 +93,21 @@ int button(int id, int x, int y) {
     if (ui_state.hot_item == id) {
         if (ui_state.pressed_item == id) {
             // Button is both hot and pressed
-            drawrect(x, y, 64, 48, pressed);
+            drawrect(x, y, button_width, button_height, pressed);
         } else {
             // Button is either active or hovered
             if (ui_state.active_item == id) {
-                drawrect(x, y, 64, 48, active);
+                drawrect(x, y, button_width, button_height, active);
             } else {
-                drawrect(x, y, 64, 48, hover);
+                drawrect(x, y, button_width, button_height, hover);
             }
         }
     } else {
         // Button is not hovered but could be either active or passive
         if (ui_state.active_item == id) {
-            drawrect(x, y, 64, 48, active);
+            drawrect(x, y, button_width, button_height, active);
         } else {
-            drawrect(x, y, 64, 48, passive);
+            drawrect(x, y, button_width, button_height, passive);
         }
     }
 
@@ -130,19 +135,27 @@ void render() {
 
     imgui_prepare();
 
-    if (button(1, 50, 50)) {
+    if (button(1, 4, 4)) {
         printf("Button1 pressed\n");
     }
 
-    if (button(2, 150, 50)) {
+    if (button(2, 4*2+button_width, 4)) {
         printf("Button2 pressed\n");
     }
 
-    if (button(3, 50, 150)) {
+    if (button(3, 4, 4*2+button_height)) {
         printf("Button3 pressed\n");
     }
 
-    if (button(4, 150, 150)) {
+    if (button(4, 4*2+button_width, 4*2+button_height)) {
+        printf("Button4 pressed\n");
+    }
+
+    if (button(5, 4, 4*3+2*button_height)) {
+        printf("Button3 pressed\n");
+    }
+
+    if (button(6, 4*2+button_width, 4*3+2*button_height)) {
         printf("Button4 pressed\n");
     }
 
@@ -171,7 +184,7 @@ int main(int argc, char *argv[]) {
 
     window = SDL_CreateWindow(
       "ImGui", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-      640, 480, 0);
+      window_width, window_height, 0);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     // If we fail, return error.
