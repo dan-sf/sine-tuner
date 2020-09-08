@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
+#include "audio.c"
+
 // Screen surface
 static SDL_Window *window;
 static SDL_Renderer *renderer;
@@ -136,27 +138,31 @@ void render() {
     imgui_prepare();
 
     if (button(1, 4, 4)) {
-        printf("Button1 pressed\n");
+        a_set_tone(82.41);
     }
 
     if (button(2, 4*2+button_width, 4)) {
-        printf("Button2 pressed\n");
+        a_set_tone(110.0);
     }
 
     if (button(3, 4, 4*2+button_height)) {
-        printf("Button3 pressed\n");
+        a_set_tone(146.83);
     }
 
     if (button(4, 4*2+button_width, 4*2+button_height)) {
-        printf("Button4 pressed\n");
+        a_set_tone(196.0);
     }
 
     if (button(5, 4, 4*3+2*button_height)) {
-        printf("Button3 pressed\n");
+        a_set_tone(246.94);
     }
 
     if (button(6, 4*2+button_width, 4*3+2*button_height)) {
-        printf("Button4 pressed\n");
+        a_set_tone(329.63);
+    }
+
+    if (ui_state.active_item == 0) {
+        a_set_tone(0.0);
     }
 
     imgui_finish();
@@ -171,14 +177,14 @@ void render() {
 // Entry point
 int main(int argc, char *argv[]) {
     // Initialize SDL's subsystems - in this case, only video.
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
 
     // Register SDL_Quit to be called at exit; makes sure things are
     // cleaned up when we quit.
-    atexit(SDL_Quit);
+    atexit(SDL_Quit); // Should I be doing audio cleanup here???
 
     // Attempt to create a 640x480 window with 32bit pixels.
 
@@ -192,6 +198,9 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unable to set up window/renderer: %s\n", SDL_GetError());
         exit(1);
     }
+
+    a_init();
+    a_start_playing(); // Should this be in the init?
 
     // Main loop: loop forever.
     while (1) {
