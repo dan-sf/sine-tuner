@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #include "audio.c"
 
 // Screen surface
@@ -14,11 +17,134 @@ typedef struct {
     int a;
 } Color;
 
+typedef struct {
+    stbtt_fontinfo* info;
+    stbtt_packedchar* chars;
+    SDL_Texture* atlas;
+    int texture_size;
+    float size;
+    float scale;
+    int ascent;
+    int baseline;
+} FontData;
+FontData* font_data;
+
+void r_init_font() {
+    float size = 30.0;
+    FILE *ff = fopen("monospace.ttf", "rb");
+    if (!ff) { printf("font file not found\n"); exit(1); }
+
+    fseek(ff, 0, SEEK_END);
+    int fsize = ftell(ff);
+    rewind(ff);
+    unsigned char* buffer = malloc(1<<20);
+    fread(buffer, 1, fsize, ff);
+    fclose(ff);
+
+    font_data = calloc(sizeof(FontData), 1);
+    font_data->info = malloc(sizeof(stbtt_fontinfo));
+    font_data->chars = malloc(sizeof(stbtt_packedchar) * 96); // ASCII 32..126 is 95 glyphs
+
+    if(stbtt_InitFont(font_data->info, buffer, 0) == 0) {
+        free(buffer);
+        return;
+    }
+
+    // fill bitmap atlas with packed characters
+    unsigned char* bitmap = NULL;
+    font_data->texture_size = 32;
+    while(1) {
+        bitmap = malloc(font_data->texture_size * font_data->texture_size);
+        stbtt_pack_context pack_context;
+        stbtt_PackBegin(&pack_context, bitmap, font_data->texture_size, font_data->texture_size, 0, 1, 0);
+        stbtt_PackSetOversampling(&pack_context, 1, 1);
+        if(!stbtt_PackFontRange(&pack_context, buffer, 0, size, 32, 95, font_data->chars)) {
+            // too small
+            free(bitmap);
+            stbtt_PackEnd(&pack_context);
+            font_data->texture_size *= 2;
+        } else {
+            stbtt_PackEnd(&pack_context);
+            break;
+        }
+    }
+
+    // convert bitmap to texture
+    font_data->atlas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, font_data->texture_size, font_data->texture_size);
+    SDL_SetTextureBlendMode(font_data->atlas, SDL_BLENDMODE_BLEND);
+
+    Uint32* pixels = malloc(font_data->texture_size * font_data->texture_size * sizeof(Uint32));
+    static SDL_PixelFormat* format = NULL; // Should this just be made global (at top of file)?
+    if (format == NULL) format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA32);
+    for (int i = 0; i < font_data->texture_size * font_data->texture_size; i++) {
+        pixels[i] = SDL_MapRGBA(format, 0xff, 0xff, 0xff, bitmap[i]);
+    }
+    SDL_UpdateTexture(font_data->atlas, NULL, pixels, font_data->texture_size * sizeof(Uint32));
+    free(pixels);
+    free(bitmap);
+
+    // setup additional info
+    font_data->scale = stbtt_ScaleForPixelHeight(font_data->info, size);
+    stbtt_GetFontVMetrics(font_data->info, &font_data->ascent, 0, 0);
+    font_data->baseline = (int) (font_data->ascent * font_data->scale);
+
+    free(buffer);
+}
+
+int r_get_text_height(void) {
+  return 18;
+}
+
+
+void r_clear(Color clr) {
+    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, clr.a);
+    SDL_RenderClear(renderer);
+}
+
+
+void r_present(void) {
+    SDL_RenderPresent(renderer);
+}
+
+
+typedef struct { int x, y; } Vec2;
+
+void r_draw_text(const char *text, Vec2 pos, Color color) {
+    SDL_SetTextureColorMod(font_data->atlas, color.r, color.g, color.b);
+    SDL_SetTextureAlphaMod(font_data->atlas, color.a);
+    for(int i = 0; text[i]; i++) {
+        // Check char is within ascii range
+        if ((int)text[i] >= 32 && (int)text[i] < 128) {
+            stbtt_packedchar* info = &font_data->chars[text[i] - 32];
+
+            SDL_Rect src_rect = {
+                info->x0,
+                info->y0,
+                info->x1 - info->x0,
+                info->y1 - info->y0
+            };
+            SDL_Rect dst_rect = {
+                pos.x + info->xoff,
+                // @Robustness: Here we center the letter within the button in
+                // the y direction. This will not work for multiple characters
+                // as each char is a different height, we should update this
+                // code to handle centering text properly
+                pos.y + info->yoff + (info->y1 - info->y0)/2,
+                info->x1 - info->x0,
+                info->y1 - info->y0
+            };
+
+            SDL_RenderCopy(renderer, font_data->atlas, &src_rect, &dst_rect);
+            pos.x += info->xadvance;
+        }
+    }
+}
 
 // Button colors, make this a struct of colors...
 
 Color background_color = { .r = 30, .g = 30, .b = 30, .a = 255 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 255 };
+Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
 Color passive = { .r = 50, .g = 50, .b = 50, .a = 255 };
 Color hover = { .r = 80, .g = 80, .b = 80, .a = 255 };
 Color pressed = { .r = 170, .g = 170, .b = 170, .a = 255 };
@@ -165,6 +291,10 @@ void render() {
         a_set_tone(0.0);
     }
 
+    // Working text rendering ...
+    Vec2 p = { .x = 10, .y = 10 };
+    r_draw_text("test", p, white);
+
     imgui_finish();
 
     // update the screen
@@ -198,6 +328,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unable to set up window/renderer: %s\n", SDL_GetError());
         exit(1);
     }
+
+    r_init_font();
 
     a_init();
     a_start_playing(); // Should this be in the init?
