@@ -124,7 +124,7 @@ void r_draw_text(const char *text, Vec2 pos, Color color) {
                 info->y1 - info->y0
             };
             SDL_Rect dst_rect = {
-                pos.x + info->xoff,
+                pos.x + info->xoff - (info->x1 - info->x0)/2,
                 // @Robustness: Here we center the letter within the button in
                 // the y direction. This will not work for multiple characters
                 // as each char is a different height, we should update this
@@ -145,6 +145,7 @@ void r_draw_text(const char *text, Vec2 pos, Color color) {
 Color background_color = { .r = 30, .g = 30, .b = 30, .a = 255 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 255 };
 Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
+Color red = { .r = 255, .g = 0, .b = 0, .a = 255 };
 Color passive = { .r = 50, .g = 50, .b = 50, .a = 255 };
 Color hover = { .r = 80, .g = 80, .b = 80, .a = 255 };
 Color pressed = { .r = 170, .g = 170, .b = 170, .a = 255 };
@@ -209,6 +210,13 @@ int region_hit(int x, int y, int w, int h) {
     return 1;
 }
 
+void draw_text(int x, int y) {
+    // Working text rendering ...
+    Vec2 p = { .x = x, .y = y };
+    r_draw_text("X", p, white);
+    //drawrect(x, y, 5, 5, red); // @Debug: centering...
+}
+
 int button(int id, int x, int y) {
     if (region_hit(x, y, button_width, button_height)) {
         ui_state.hot_item = id;
@@ -217,25 +225,32 @@ int button(int id, int x, int y) {
         }
     }
 
+    // TODO: create a draw_button function that renders the rect then the text
+
     // Render button 
     if (ui_state.hot_item == id) {
         if (ui_state.pressed_item == id) {
             // Button is both hot and pressed
             drawrect(x, y, button_width, button_height, pressed);
+            draw_text(x+button_height/2, y+button_width/2);
         } else {
             // Button is either active or hovered
             if (ui_state.active_item == id) {
                 drawrect(x, y, button_width, button_height, active);
+            draw_text(x+button_height/2, y+button_width/2);
             } else {
                 drawrect(x, y, button_width, button_height, hover);
+            draw_text(x+button_height/2, y+button_width/2);
             }
         }
     } else {
         // Button is not hovered but could be either active or passive
         if (ui_state.active_item == id) {
             drawrect(x, y, button_width, button_height, active);
+            draw_text(x+button_height/2, y+button_width/2);
         } else {
             drawrect(x, y, button_width, button_height, passive);
+            draw_text(x+button_height/2, y+button_width/2);
         }
     }
 
@@ -290,10 +305,6 @@ void render() {
     if (ui_state.active_item == 0) {
         a_set_tone(0.0);
     }
-
-    // Working text rendering ...
-    Vec2 p = { .x = 10, .y = 10 };
-    r_draw_text("test", p, white);
 
     imgui_finish();
 
