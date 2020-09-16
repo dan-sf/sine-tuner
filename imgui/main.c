@@ -210,14 +210,14 @@ int region_hit(int x, int y, int w, int h) {
     return 1;
 }
 
-void draw_text(int x, int y) {
+void draw_text(int x, int y, char *text) {
     // Working text rendering ...
     Vec2 p = { .x = x, .y = y };
-    r_draw_text("X", p, white);
+    r_draw_text(text, p, white);
     //drawrect(x, y, 5, 5, red); // @Debug: centering...
 }
 
-int button(int id, int x, int y) {
+int button(int id, int x, int y, char *text) {
     if (region_hit(x, y, button_width, button_height)) {
         ui_state.hot_item = id;
         if (ui_state.mouse_down) {
@@ -232,25 +232,25 @@ int button(int id, int x, int y) {
         if (ui_state.pressed_item == id) {
             // Button is both hot and pressed
             drawrect(x, y, button_width, button_height, pressed);
-            draw_text(x+button_height/2, y+button_width/2);
+            draw_text(x+button_height/2, y+button_width/2, text);
         } else {
             // Button is either active or hovered
             if (ui_state.active_item == id) {
                 drawrect(x, y, button_width, button_height, active);
-            draw_text(x+button_height/2, y+button_width/2);
+                draw_text(x+button_height/2, y+button_width/2, text);
             } else {
                 drawrect(x, y, button_width, button_height, hover);
-            draw_text(x+button_height/2, y+button_width/2);
+                draw_text(x+button_height/2, y+button_width/2, text);
             }
         }
     } else {
         // Button is not hovered but could be either active or passive
         if (ui_state.active_item == id) {
             drawrect(x, y, button_width, button_height, active);
-            draw_text(x+button_height/2, y+button_width/2);
+            draw_text(x+button_height/2, y+button_width/2, text);
         } else {
             drawrect(x, y, button_width, button_height, passive);
-            draw_text(x+button_height/2, y+button_width/2);
+            draw_text(x+button_height/2, y+button_width/2, text);
         }
     }
 
@@ -278,27 +278,27 @@ void render() {
 
     imgui_prepare();
 
-    if (button(1, 4, 4)) {
+    if (button(1, 4, 4, "E")) {
         a_set_tone(82.41);
     }
 
-    if (button(2, 4*2+button_width, 4)) {
+    if (button(2, 4*2+button_width, 4, "A")) {
         a_set_tone(110.0);
     }
 
-    if (button(3, 4, 4*2+button_height)) {
+    if (button(3, 4, 4*2+button_height, "D")) {
         a_set_tone(146.83);
     }
 
-    if (button(4, 4*2+button_width, 4*2+button_height)) {
+    if (button(4, 4*2+button_width, 4*2+button_height, "G")) {
         a_set_tone(196.0);
     }
 
-    if (button(5, 4, 4*3+2*button_height)) {
+    if (button(5, 4, 4*3+2*button_height, "B")) {
         a_set_tone(246.94);
     }
 
-    if (button(6, 4*2+button_width, 4*3+2*button_height)) {
+    if (button(6, 4*2+button_width, 4*3+2*button_height, "E")) {
         a_set_tone(329.63);
     }
 
