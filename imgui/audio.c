@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <SDL2/SDL.h>
 
@@ -14,7 +15,9 @@ typedef struct {
     int size;
     double samples_per_second;
     double tone_volume;
+    double previous_tone_volume;
     double tone_hz;
+    double previous_tone_hz;
     double advance;
     double time;
     Sint16 *buffer;
@@ -50,7 +53,9 @@ void a_init(void) {
     audio_data->advance = 1.0/audio_data->samples_per_second;
     audio_data->time = 0.0;
     audio_data->tone_volume = 5000.0;
+    audio_data->previous_tone_volume = 5000.0;
     audio_data->tone_hz = 0.0;
+    audio_data->previous_tone_hz = 0.0;
 
     wanted_spec.freq = audio_data->samples_per_second;
     wanted_spec.format = AUDIO_S16;
@@ -70,9 +75,21 @@ void a_init(void) {
     }
 }
 
-void generate_wave() {
+// @TODO: here we could just generate the samples that are needed based on what
+// was asked for in the callback
+void generate_wave(int len) { // Here len is the length of the buffer in bytes not samples!
     Sint16 *sample_write = audio_data->buffer;
     Sint16 sample_value;
+
+    bool muting = false;
+    double turn_down = (double)len / (double)sizeof(Sint16) / audio_data->tone_volume;
+    if (audio_data->previous_tone_hz > 0.0 && audio_data->tone_hz == 0.0) {
+        muting = true;
+    }
+
+    // If we are muting decrease the tone_volume by number_of_samples_asked_for
+    // / tone_volume for every sample, that way at the end of the wave we will
+    // get to zero smoothly
 
     for (int sample_index = 0; sample_index < audio_data->size/CHANNELS; sample_index++) {
 
@@ -91,7 +108,20 @@ void generate_wave() {
         //     t = audio_data->time;
         // }
 
-        double sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
+        double sval;
+        if (muting) {
+            if (audio_data->previous_tone_volume >= 0.0 && audio_data->previous_tone_volume >= turn_down) {
+                audio_data->previous_tone_volume -= turn_down;
+                printf("%f\n", audio_data->previous_tone_volume);
+            } else {
+                audio_data->previous_tone_volume = 0.0;
+            }
+
+            sval = audio_data->previous_tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
+        } else {
+            sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
+        }
+
         sample_value = (Sint16) sval;
 
         // Write the sample_value to the buffer for each channel
@@ -102,6 +132,9 @@ void generate_wave() {
         // Advance the time
         audio_data->time += audio_data->advance;
     }
+
+    audio_data->previous_tone_volume = audio_data->tone_volume;
+    audio_data->previous_tone_hz = audio_data->tone_hz;
 }
 
 void audio_callback(void *userdata, Uint8 *stream, int len) {
@@ -109,7 +142,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
     Audio_Data *audio_data = (Audio_Data *) userdata;
 
     // Generate the next wave
-    generate_wave();
+    generate_wave(len);
 
     // @TODO: Here we should check to make sure that the len is less than the
     // buffer size. If the len was larger we'd be trying to copy mem we don't
