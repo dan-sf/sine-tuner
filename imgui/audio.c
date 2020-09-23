@@ -27,7 +27,7 @@ static SDL_AudioDeviceID device;
 static Audio_Data *audio_data;
 
 void a_set_tone(double tone_hz) {
-    audio_data->time = 0.0;
+    //audio_data->time = 0.0;
     audio_data->tone_hz = tone_hz;
 }
 
@@ -110,14 +110,17 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
 
         double sval;
         if (muting) {
-            if (audio_data->previous_tone_volume >= 0.0 && audio_data->previous_tone_volume >= turn_down) {
-                audio_data->previous_tone_volume -= turn_down;
-                printf("%f\n", audio_data->previous_tone_volume);
+            if (audio_data->previous_tone_volume == 0.0) {
+                sval = 0.0;
             } else {
-                audio_data->previous_tone_volume = 0.0;
+                sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
+                double next_sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
+                if ((sval >= 0.0 && next_sval < 0.0) || (sval <= 0.0 && next_sval > 0.0)) {
+                    sval = 0.0;
+                    audio_data->previous_tone_volume = 0.0;
+                    printf("go it\n");
+                }
             }
-
-            sval = audio_data->previous_tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
         } else {
             sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
         }
@@ -131,6 +134,10 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
 
         // Advance the time
         audio_data->time += audio_data->advance;
+    }
+
+    if (muting) {
+        audio_data->time = 0.0;
     }
 
     audio_data->previous_tone_volume = audio_data->tone_volume;
