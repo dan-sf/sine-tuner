@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <SDL2/SDL.h>
 
@@ -14,7 +15,9 @@ typedef struct {
     int size;
     double samples_per_second;
     double tone_volume;
+    double previous_tone_volume;
     double tone_hz;
+    double previous_tone_hz;
     double advance;
     double time;
     Sint16 *buffer;
@@ -24,14 +27,16 @@ static SDL_AudioDeviceID device;
 static Audio_Data *audio_data;
 
 void a_set_tone(double tone_hz) {
-    audio_data->time = 0.0;
     audio_data->tone_hz = tone_hz;
 }
 
 void a_stop_playing() {
     SDL_ClearQueuedAudio(device);
-    //SDL_PauseAudioDevice(device, 1);
     a_set_tone(0.0);
+}
+
+void a_start_playing() {
+    SDL_PauseAudioDevice(device, 0);
 }
 
 void a_init(void) {
@@ -46,7 +51,9 @@ void a_init(void) {
     audio_data->advance = 1.0/audio_data->samples_per_second;
     audio_data->time = 0.0;
     audio_data->tone_volume = 5000.0;
+    audio_data->previous_tone_volume = 5000.0;
     audio_data->tone_hz = 0.0;
+    audio_data->previous_tone_hz = 0.0;
 
     wanted_spec.freq = audio_data->samples_per_second;
     wanted_spec.format = AUDIO_S16;
@@ -66,9 +73,20 @@ void a_init(void) {
     }
 }
 
-void generate_wave() {
+// @TODO: here we could just generate the samples that are needed based on what
+// was asked for in the callback
+void generate_wave(int len) { // Here len is the length of the buffer in bytes not samples!
     Sint16 *sample_write = audio_data->buffer;
     Sint16 sample_value;
+
+    // If we are switching from one tone to another only switch when the sine
+    // value gets to zero to avoid audio pops. This doesn't fully get rid of
+    // the pops but reduces them. Really we should be doing actual cross fades
+    // here with mixing
+    bool changing = false;
+    if (audio_data->previous_tone_hz != audio_data->tone_hz) {
+        changing = true;
+    }
 
     for (int sample_index = 0; sample_index < audio_data->size/CHANNELS; sample_index++) {
 
@@ -76,18 +94,20 @@ void generate_wave() {
         double two_pi = 2.0 * PI;
         double t = audio_data->time;
 
-        // We may want to reset the time once we hit 44K (or the set samples
-        // per second), this would prevent us from overflowing, however, it'll
-        // take 12 hours alone to hit 44K which still a ways away from an
-        // overflow, so practically we can probably just continually increase
-        // the time without this check. Leaving this comment incase we decide
-        // to use it
-        // if (t == audio_data->samples_per_second) {
-        //     audio_data->time = 0.0;
-        //     t = audio_data->time;
-        // }
+        double sval;
+        if (changing) {
+            sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
+            double next_sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
+            if ((sval >= 0.0 && next_sval < 0.0) || (sval <= 0.0 && next_sval > 0.0)) {
+                audio_data->time = 0.0;
+                t = audio_data->time;
+                sval = 0.0;
+                changing = false;
+            }
+        } else {
+            sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
+        }
 
-        double sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
         sample_value = (Sint16) sval;
 
         // Write the sample_value to the buffer for each channel
@@ -98,6 +118,9 @@ void generate_wave() {
         // Advance the time
         audio_data->time += audio_data->advance;
     }
+
+    audio_data->previous_tone_volume = audio_data->tone_volume;
+    audio_data->previous_tone_hz = audio_data->tone_hz;
 }
 
 void audio_callback(void *userdata, Uint8 *stream, int len) {
@@ -105,7 +128,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
     Audio_Data *audio_data = (Audio_Data *) userdata;
 
     // Generate the next wave
-    generate_wave();
+    generate_wave(len);
 
     // @TODO: Here we should check to make sure that the len is less than the
     // buffer size. If the len was larger we'd be trying to copy mem we don't
