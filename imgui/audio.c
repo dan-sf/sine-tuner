@@ -27,13 +27,11 @@ static SDL_AudioDeviceID device;
 static Audio_Data *audio_data;
 
 void a_set_tone(double tone_hz) {
-    //audio_data->time = 0.0;
     audio_data->tone_hz = tone_hz;
 }
 
 void a_stop_playing() {
     SDL_ClearQueuedAudio(device);
-    //SDL_PauseAudioDevice(device, 1);
     a_set_tone(0.0);
 }
 
@@ -81,15 +79,14 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
     Sint16 *sample_write = audio_data->buffer;
     Sint16 sample_value;
 
-    bool muting = false;
-    double turn_down = (double)len / (double)sizeof(Sint16) / audio_data->tone_volume;
-    if (audio_data->previous_tone_hz > 0.0 && audio_data->tone_hz == 0.0) {
-        muting = true;
+    // If we are switching from one tone to another only switch when the sine
+    // value gets to zero to avoid audio pops. This doesn't fully get rid of
+    // the pops but reduces them. Really we should be doing actual cross fades
+    // here with mixing
+    bool changing = false;
+    if (audio_data->previous_tone_hz != audio_data->tone_hz) {
+        changing = true;
     }
-
-    // If we are muting decrease the tone_volume by number_of_samples_asked_for
-    // / tone_volume for every sample, that way at the end of the wave we will
-    // get to zero smoothly
 
     for (int sample_index = 0; sample_index < audio_data->size/CHANNELS; sample_index++) {
 
@@ -97,29 +94,15 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
         double two_pi = 2.0 * PI;
         double t = audio_data->time;
 
-        // We may want to reset the time once we hit 44K (or the set samples
-        // per second), this would prevent us from overflowing, however, it'll
-        // take 12 hours alone to hit 44K which still a ways away from an
-        // overflow, so practically we can probably just continually increase
-        // the time without this check. Leaving this comment incase we decide
-        // to use it
-        // if (t == audio_data->samples_per_second) {
-        //     audio_data->time = 0.0;
-        //     t = audio_data->time;
-        // }
-
         double sval;
-        if (muting) {
-            if (audio_data->previous_tone_volume == 0.0) {
+        if (changing) {
+            sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
+            double next_sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
+            if ((sval >= 0.0 && next_sval < 0.0) || (sval <= 0.0 && next_sval > 0.0)) {
+                audio_data->time = 0.0;
+                t = audio_data->time;
                 sval = 0.0;
-            } else {
-                sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
-                double next_sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
-                if ((sval >= 0.0 && next_sval < 0.0) || (sval <= 0.0 && next_sval > 0.0)) {
-                    sval = 0.0;
-                    audio_data->previous_tone_volume = 0.0;
-                    printf("go it\n");
-                }
+                changing = false;
             }
         } else {
             sval = audio_data->tone_volume * sin(two_pi * audio_data->tone_hz * t);
@@ -134,10 +117,6 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
 
         // Advance the time
         audio_data->time += audio_data->advance;
-    }
-
-    if (muting) {
-        audio_data->time = 0.0;
     }
 
     audio_data->previous_tone_volume = audio_data->tone_volume;
