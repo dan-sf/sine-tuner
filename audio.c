@@ -50,8 +50,8 @@ void a_init(void) {
     audio_data->samples_per_second = 44000.0;
     audio_data->advance = 1.0/audio_data->samples_per_second;
     audio_data->time = 0.0;
-    audio_data->tone_volume = 5000.0;
-    audio_data->previous_tone_volume = 5000.0;
+    audio_data->tone_volume = 10000.0;
+    audio_data->previous_tone_volume = 10000.0;
     audio_data->tone_hz = 0.0;
     audio_data->previous_tone_hz = 0.0;
 

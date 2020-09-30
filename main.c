@@ -227,7 +227,7 @@ int button(int id, int x, int y, char *text) {
 
     // TODO: create a draw_button function that renders the rect then the text
 
-    // Render button 
+    // Render button
     if (ui_state.hot_item == id) {
         if (ui_state.pressed_item == id) {
             // Button is both hot and pressed
@@ -299,7 +299,8 @@ void render() {
     }
 
     if (button(6, 4*2+button_width, 4*3+2*button_height, "E")) {
-        a_set_tone(329.63);
+        // a_set_tone(329.63);
+        a_set_tone(440.0); // @Debug tone
     }
 
     if (ui_state.active_item == 0) {
@@ -330,7 +331,7 @@ int main(int argc, char *argv[]) {
     // Attempt to create a 640x480 window with 32bit pixels.
 
     window = SDL_CreateWindow(
-      "ImGui", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      "Sine Tuner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       window_width, window_height, 0);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -345,8 +346,7 @@ int main(int argc, char *argv[]) {
     a_init();
     a_start_playing(); // Should this be in the init?
 
-    // Main loop: loop forever.
-    while (1) {
+    while (true) {
         // Render stuff
         render();
 
