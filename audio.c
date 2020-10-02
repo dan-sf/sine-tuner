@@ -7,6 +7,8 @@
 #define CHANNELS 2
 #define PI 3.14159265
 
+#define VOLUME 10000.0
+
 void audio_callback(void *userdata, Uint8 *stream, int len);
 void a_cleanup();
 void generate_wave();
@@ -26,13 +28,14 @@ typedef struct {
 static SDL_AudioDeviceID device;
 static Audio_Data *audio_data;
 
-void a_set_tone(double tone_hz) {
+void a_set_tone(double tone_hz, double tone_volume) {
     audio_data->tone_hz = tone_hz;
+    audio_data->tone_volume = tone_volume;
 }
 
 void a_stop_playing() {
     SDL_ClearQueuedAudio(device);
-    a_set_tone(0.0);
+    a_set_tone(0.0, VOLUME);
 }
 
 void a_start_playing() {
@@ -50,8 +53,8 @@ void a_init(void) {
     audio_data->samples_per_second = 44000.0;
     audio_data->advance = 1.0/audio_data->samples_per_second;
     audio_data->time = 0.0;
-    audio_data->tone_volume = 10000.0;
-    audio_data->previous_tone_volume = 10000.0;
+    audio_data->tone_volume = VOLUME;
+    audio_data->previous_tone_volume = VOLUME;
     audio_data->tone_hz = 0.0;
     audio_data->previous_tone_hz = 0.0;
 
@@ -86,6 +89,10 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
     bool changing = false;
     if (audio_data->previous_tone_hz != audio_data->tone_hz) {
         changing = true;
+        if (audio_data->previous_tone_hz == 0.0) {
+            audio_data->time = 0.0;
+            changing = false;
+        }
     }
 
     for (int sample_index = 0; sample_index < audio_data->size/CHANNELS; sample_index++) {
@@ -96,8 +103,8 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
 
         double sval;
         if (changing) {
-            sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
-            double next_sval = audio_data->tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
+            sval = audio_data->previous_tone_volume * sin(two_pi * audio_data->previous_tone_hz * t);
+            double next_sval = audio_data->previous_tone_volume * sin(two_pi * audio_data->previous_tone_hz * (t+audio_data->advance));
             if ((sval >= 0.0 && next_sval < 0.0) || (sval <= 0.0 && next_sval > 0.0)) {
                 audio_data->time = 0.0;
                 t = audio_data->time;

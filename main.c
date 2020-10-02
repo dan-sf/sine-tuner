@@ -279,32 +279,31 @@ void render() {
     imgui_prepare();
 
     if (button(1, 4, 4, "E")) {
-        a_set_tone(82.41);
+        a_set_tone(82.41, VOLUME);
     }
 
     if (button(2, 4*2+button_width, 4, "A")) {
-        a_set_tone(110.0);
+        a_set_tone(110.0, VOLUME);
     }
 
     if (button(3, 4, 4*2+button_height, "D")) {
-        a_set_tone(146.83);
+        a_set_tone(146.83, VOLUME);
     }
 
     if (button(4, 4*2+button_width, 4*2+button_height, "G")) {
-        a_set_tone(196.0);
+        a_set_tone(196.0, VOLUME);
     }
 
     if (button(5, 4, 4*3+2*button_height, "B")) {
-        a_set_tone(246.94);
+        a_set_tone(246.94, VOLUME);
     }
 
     if (button(6, 4*2+button_width, 4*3+2*button_height, "E")) {
-        // a_set_tone(329.63);
-        a_set_tone(440.0); // @Debug tone
+        a_set_tone(329.63, VOLUME);
     }
 
     if (ui_state.active_item == 0) {
-        a_set_tone(0.0);
+        a_set_tone(0.0, 0.0);
     }
 
     imgui_finish();
