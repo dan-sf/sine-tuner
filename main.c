@@ -6,7 +6,7 @@
 
 #include "audio.c"
 
-// Screen surface
+
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 
@@ -29,7 +29,7 @@ typedef struct {
 } FontData;
 FontData* font_data;
 
-void r_init_font() {
+void init_font() {
     float size = 30.0;
     FILE *ff = fopen("monospace.ttf", "rb");
     if (!ff) { printf("font file not found\n"); exit(1); }
@@ -91,13 +91,7 @@ void r_init_font() {
     free(buffer);
 }
 
-int r_get_text_height() {
-  return 18;
-}
-
-typedef struct { int x, y; } Vec2;
-
-void r_draw_text(const char *text, Vec2 pos, Color color) {
+void draw_text(const char *text, int x, int y, Color color) {
     SDL_SetTextureColorMod(font_data->atlas, color.r, color.g, color.b);
     SDL_SetTextureAlphaMod(font_data->atlas, color.a);
     for(int i = 0; text[i]; i++) {
@@ -112,18 +106,18 @@ void r_draw_text(const char *text, Vec2 pos, Color color) {
                 info->y1 - info->y0
             };
             SDL_Rect dst_rect = {
-                pos.x + info->xoff - (info->x1 - info->x0)/2,
+                x + info->xoff - (info->x1 - info->x0)/2,
                 // @Robustness: Here we center the letter within the button in
                 // the y direction. This will not work for multiple characters
                 // as each char is a different height, we should update this
                 // code to handle centering text properly
-                pos.y + info->yoff + (info->y1 - info->y0)/2,
+                y + info->yoff + (info->y1 - info->y0)/2,
                 info->x1 - info->x0,
                 info->y1 - info->y0
             };
 
             SDL_RenderCopy(renderer, font_data->atlas, &src_rect, &dst_rect);
-            pos.x += info->xadvance;
+            x += info->xadvance;
         }
     }
 }
@@ -156,7 +150,7 @@ struct UIState {
 ui_state = {0, 0, 0, 0, 0, 0}; // Global ui state
 
 // Simplified interface to SDL's fillrect call
-void drawrect(int x, int y, int w, int h, Color color)
+void draw_rect(int x, int y, int w, int h, Color color)
 {
     SDL_Rect rect;
     rect.x = x;
@@ -198,13 +192,6 @@ int region_hit(int x, int y, int w, int h) {
     return 1;
 }
 
-void draw_text(int x, int y, char *text) {
-    // Working text rendering ...
-    Vec2 p = { .x = x, .y = y };
-    r_draw_text(text, p, white);
-    //drawrect(x, y, 5, 5, red); // @Debug: centering...
-}
-
 int button(int id, int x, int y, char *text) {
     if (region_hit(x, y, button_width, button_height)) {
         ui_state.hot_item = id;
@@ -219,26 +206,26 @@ int button(int id, int x, int y, char *text) {
     if (ui_state.hot_item == id) {
         if (ui_state.pressed_item == id) {
             // Button is both hot and pressed
-            drawrect(x, y, button_width, button_height, pressed);
-            draw_text(x+button_height/2, y+button_width/2, text);
+            draw_rect(x, y, button_width, button_height, pressed);
+            draw_text(text, x+button_height/2, y+button_width/2, white);
         } else {
             // Button is either active or hovered
             if (ui_state.active_item == id) {
-                drawrect(x, y, button_width, button_height, active);
-                draw_text(x+button_height/2, y+button_width/2, text);
+                draw_rect(x, y, button_width, button_height, active);
+            draw_text(text, x+button_height/2, y+button_width/2, white);
             } else {
-                drawrect(x, y, button_width, button_height, hover);
-                draw_text(x+button_height/2, y+button_width/2, text);
+                draw_rect(x, y, button_width, button_height, hover);
+            draw_text(text, x+button_height/2, y+button_width/2, white);
             }
         }
     } else {
         // Button is not hovered but could be either active or passive
         if (ui_state.active_item == id) {
-            drawrect(x, y, button_width, button_height, active);
-            draw_text(x+button_height/2, y+button_width/2, text);
+            draw_rect(x, y, button_width, button_height, active);
+            draw_text(text, x+button_height/2, y+button_width/2, white);
         } else {
-            drawrect(x, y, button_width, button_height, passive);
-            draw_text(x+button_height/2, y+button_width/2, text);
+            draw_rect(x, y, button_width, button_height, passive);
+            draw_text(text, x+button_height/2, y+button_width/2, white);
         }
     }
 
@@ -261,8 +248,8 @@ int button(int id, int x, int y, char *text) {
 
 // Rendering function
 void render() {   
-    // clear screen
-    drawrect(0, 0, 640, 480, background_color);
+    // Clear the screen
+    draw_rect(0, 0, window_width, window_height, background_color);
 
     imgui_prepare();
 
@@ -296,27 +283,22 @@ void render() {
 
     imgui_finish();
 
-    // update the screen
+    // Update window
     SDL_RenderPresent(renderer);
 
-    // don't take all the cpu time
+    // Small delay to reduce unnecessary frame draws
     SDL_Delay(10); 
 }
 
-// Entry point
 int main(int argc, char *argv[]) {
-    // Initialize SDL's subsystems - in this case, only video.
+    // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
-
-    // Register SDL_Quit to be called at exit; makes sure things are
-    // cleaned up when we quit.
     atexit(SDL_Quit); // Should I be doing audio cleanup here???
 
-    // Attempt to create a 640x480 window with 32bit pixels.
-
+    // Create window
     window = SDL_CreateWindow(
       "Sine Tuner", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       window_width, window_height, 0);
@@ -328,7 +310,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    r_init_font();
+    init_font();
 
     a_init();
     a_start_playing(); // Should this be in the init?
@@ -339,7 +321,7 @@ int main(int argc, char *argv[]) {
 
         // We should probably render after handling all the events...
 
-        // Poll for events, and handle the ones we care about.
+        // Process user events
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -349,22 +331,20 @@ int main(int argc, char *argv[]) {
                     ui_state.mouse_y = event.motion.y;
                     break;
                 case SDL_MOUSEBUTTONDOWN:
-                    // update button down state if left-clicking
                     if (event.button.button == SDL_BUTTON_LEFT)
-                      ui_state.mouse_down = 1;
+                        ui_state.mouse_down = 1;
                     break;
                 case SDL_MOUSEBUTTONUP:
-                    // update button down state if left-clicking
                     if (event.button.button == SDL_BUTTON_LEFT)
-                      ui_state.mouse_down = 0;
+                        ui_state.mouse_down = 0;
                     break;
                 case SDL_KEYUP:
                     switch (event.key.keysym.sym) {
                         case SDLK_ESCAPE:
-                        // If escape is pressed, return (and thus, quit)
-                        return 0;
+                            // Quit on escape
+                            return 0;
                     }
-                break;
+                    break;
                 case SDL_QUIT:
                     return 0;
             }
