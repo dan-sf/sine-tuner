@@ -91,21 +91,9 @@ void r_init_font() {
     free(buffer);
 }
 
-int r_get_text_height(void) {
+int r_get_text_height() {
   return 18;
 }
-
-
-void r_clear(Color clr) {
-    SDL_SetRenderDrawColor(renderer, clr.r, clr.g, clr.b, clr.a);
-    SDL_RenderClear(renderer);
-}
-
-
-void r_present(void) {
-    SDL_RenderPresent(renderer);
-}
-
 
 typedef struct { int x, y; } Vec2;
 
