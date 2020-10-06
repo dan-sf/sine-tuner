@@ -9,9 +9,7 @@
 
 #define VOLUME 10000.0
 
-void audio_callback(void *userdata, Uint8 *stream, int len);
-void a_cleanup();
-void generate_wave();
+static void audio_callback(void *userdata, Uint8 *stream, int len);
 
 typedef struct {
     int size;
@@ -78,14 +76,13 @@ void a_init(void) {
 
 // @TODO: here we could just generate the samples that are needed based on what
 // was asked for in the callback
-void generate_wave(int len) { // Here len is the length of the buffer in bytes not samples!
+static void generate_wave(int len) { // Here len is the length of the buffer in bytes not samples!
     Sint16 *sample_write = audio_data->buffer;
     Sint16 sample_value;
 
     // If we are switching from one tone to another only switch when the sine
-    // value gets to zero to avoid audio pops. This doesn't fully get rid of
-    // the pops but reduces them. Really we should be doing actual cross fades
-    // here with mixing
+    // value gets to zero to avoid audio pops. Really we should be doing actual
+    // cross fades here with mixing
     bool changing = false;
     if (audio_data->previous_tone_hz != audio_data->tone_hz) {
         changing = true;
@@ -130,7 +127,7 @@ void generate_wave(int len) { // Here len is the length of the buffer in bytes n
     audio_data->previous_tone_hz = audio_data->tone_hz;
 }
 
-void audio_callback(void *userdata, Uint8 *stream, int len) {
+static void audio_callback(void *userdata, Uint8 *stream, int len) {
     // Cast the userdata to Audio_Data so we can use it
     Audio_Data *audio_data = (Audio_Data *) userdata;
 

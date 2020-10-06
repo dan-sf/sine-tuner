@@ -6,7 +6,6 @@
 
 #include "audio.c"
 
-
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 
@@ -122,8 +121,7 @@ void draw_text(const char *text, int x, int y, Color color) {
     }
 }
 
-// Button colors, make this a struct of colors...
-
+// Button colors
 Color background_color = { .r = 30, .g = 30, .b = 30, .a = 255 };
 Color black = { .r = 0, .g = 0, .b = 0, .a = 255 };
 Color white = { .r = 255, .g = 255, .b = 255, .a = 255 };
@@ -150,8 +148,7 @@ struct UIState {
 ui_state = {0, 0, 0, 0, 0, 0}; // Global ui state
 
 // Simplified interface to SDL's fillrect call
-void draw_rect(int x, int y, int w, int h, Color color)
-{
+void draw_rect(int x, int y, int w, int h, Color color) {
     SDL_Rect rect;
     rect.x = x;
     rect.y = y;
@@ -170,21 +167,20 @@ void draw_rect(int x, int y, int w, int h, Color color)
     SDL_RenderDrawRect(renderer, &rect);
 }
 
-// Prepare for IMGUI code
-void imgui_prepare() {
+// Prepare ui state
+void ui_prepare() {
     ui_state.hot_item = 0;
 }
 
-// Finish up after IMGUI code
-void imgui_finish() {
-    // Here we clear the active item, we might need to not do that so we can
-    // keep buttons active across frames. Either that or we let the caller
-    // handle if the button is currently active...
+// Finish up after ui processing
+void ui_finish() {
+    // Here we clear the pressed item if the mouse isn't down
     if (ui_state.mouse_down == 0) {
         ui_state.pressed_item = 0;
     }
 }
 
+// Test if given location is within the region
 int region_hit(int x, int y, int w, int h) {
     if (ui_state.mouse_x < x || ui_state.mouse_y < y ||
         ui_state.mouse_x >= x + w || ui_state.mouse_y >= y +h)
@@ -199,8 +195,6 @@ int button(int id, int x, int y, char *text) {
             ui_state.pressed_item = id;
         }
     }
-
-    // TODO: create a draw_button function that renders the rect then the text
 
     // Render button
     if (ui_state.hot_item == id) {
@@ -251,7 +245,7 @@ void render() {
     // Clear the screen
     draw_rect(0, 0, window_width, window_height, background_color);
 
-    imgui_prepare();
+    ui_prepare();
 
     if (button(1, 4, 4, "E")) {
         a_set_tone(82.41, VOLUME);
@@ -281,7 +275,7 @@ void render() {
         a_set_tone(0.0, 0.0);
     }
 
-    imgui_finish();
+    ui_finish();
 
     // Update window
     SDL_RenderPresent(renderer);
@@ -296,7 +290,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
         exit(1);
     }
-    atexit(SDL_Quit); // Should I be doing audio cleanup here???
+    atexit(SDL_Quit); // Should we be doing audio cleanup here???
 
     // Create window
     window = SDL_CreateWindow(
