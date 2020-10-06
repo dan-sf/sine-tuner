@@ -1,5 +1,5 @@
 #!/bin/bash
 
-CFLAGS="-Wall -std=c11 -pedantic `sdl2-config --libs` -lm -O0 -g -o sine_tuner"
-gcc main.c $CFLAGS
+CFLAGS="-Wall -pedantic -std=c11 `sdl2-config --libs` -O0 -g -o sine_tuner"
+gcc src/main.c $CFLAGS
 

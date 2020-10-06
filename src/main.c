@@ -30,7 +30,7 @@ FontData* font_data;
 
 void init_font() {
     float size = 30.0;
-    FILE *ff = fopen("monospace.ttf", "rb");
+    FILE *ff = fopen("font/monospace.ttf", "rb");
     if (!ff) { printf("font file not found\n"); exit(1); }
 
     fseek(ff, 0, SEEK_END);
