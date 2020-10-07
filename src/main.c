@@ -241,7 +241,7 @@ int button(int id, int x, int y, char *text) {
 }
 
 // Rendering function
-void render() {   
+void render() {
     // Clear the screen
     draw_rect(0, 0, window_width, window_height, background_color);
 
@@ -281,7 +281,7 @@ void render() {
     SDL_RenderPresent(renderer);
 
     // Small delay to reduce unnecessary frame draws
-    SDL_Delay(10); 
+    SDL_Delay(10);
 }
 
 int main(int argc, char *argv[]) {
