@@ -10,7 +10,7 @@ Thus this sine tuner program was born. Its pretty basic but I learned a lot
 building it. It's a small UI program with six buttons that each correspond to
 the open note strings on a guitar:
 
-IMAGE/GIF?
+<img width="291" alt="sine_tuner_screen_shot" src="https://user-images.githubusercontent.com/5980346/96147268-00809780-0ebc-11eb-9dfb-614a64fdacc0.png">
 
 Low E in the top row and high E in the bottom.
 
