@@ -52,7 +52,7 @@ void init_font() {
     // fill bitmap atlas with packed characters
     unsigned char* bitmap = NULL;
     font_data->texture_size = 32;
-    while(1) {
+    while (true) {
         bitmap = malloc(font_data->texture_size * font_data->texture_size);
         stbtt_pack_context pack_context;
         stbtt_PackBegin(&pack_context, bitmap, font_data->texture_size, font_data->texture_size, 0, 1, 0);
