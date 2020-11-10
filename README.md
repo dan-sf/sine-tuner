@@ -18,6 +18,9 @@ Clicking to other buttons will switch the tone.
 The low E string tone is in the top row and high E string tone is in the bottom
 row.
 
+I cover the development process for this project on my site
+[here](https://www.dsfcode.com/posts/sine-tuner-project/) if you're interested.
+
 ## Motivation
 
 I usually tune my guitar by ear using a 440 hz tone. This is pretty common since
